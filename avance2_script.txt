@@ -1,0 +1,82 @@
+-- ============================================================
+-- Script de creacion de la base de datos
+-- Sistema de Registro de Asistencia de Empleados
+-- Motor: MySQL 8.x
+-- Avance #2 - Base de Datos
+-- ============================================================
+
+-- 1. CREAR BASE DE DATOS
+-- ============================================================
+
+CREATE DATABASE IF NOT EXISTS asistencia_db
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE asistencia_db;
+
+-- 2. TABLA: usuarios
+--    Requerimientos: CA-01, GU-01, GU-02, GU-03
+-- ============================================================
+
+DROP TABLE IF EXISTS asistencias;
+DROP TABLE IF EXISTS usuarios;
+
+CREATE TABLE usuarios (
+  id          INT           NOT NULL AUTO_INCREMENT,
+  nombre      VARCHAR(100)  NOT NULL,
+  email       VARCHAR(150)  NOT NULL,
+  password    VARCHAR(255)  NOT NULL,
+  rol         ENUM('administrador', 'empleado') NOT NULL DEFAULT 'empleado',
+  estado      ENUM('activo', 'inactivo')        NOT NULL DEFAULT 'activo',
+  created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_usuarios_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3. TABLA: asistencias
+--    Requerimientos: CA-01, RE-01, RE-02, RE-03
+-- ============================================================
+
+CREATE TABLE asistencias (
+  id          INT           NOT NULL AUTO_INCREMENT,
+  usuario_id  INT           NOT NULL,
+  tipo        ENUM('entrada', 'salida') NOT NULL,
+  fecha_hora  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (id),
+
+  CONSTRAINT fk_asistencias_usuario
+    FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT,
+
+  INDEX idx_asistencias_usuario_id (usuario_id),
+  INDEX idx_asistencias_fecha_hora (fecha_hora)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 4. DATO INICIAL: Usuario administrador por defecto
+-- ============================================================
+
+INSERT INTO usuarios (nombre, email, password, rol, estado)
+VALUES (
+  'Administrador',
+  'admin@asistencia.cl',
+  '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+  'administrador',
+  'activo'
+);
+-- Password: admin123 (hasheado con bcrypt)
+
+-- 5. VERIFICACION
+-- ============================================================
+
+SELECT 'Tablas creadas correctamente' AS resultado;
+
+SHOW TABLES;
+
+DESCRIBE usuarios;
+DESCRIBE asistencias;
