@@ -227,13 +227,4 @@ npm run build            # Construir para produccion
 
 ---
 
-## Preguntas de Cierre
 
-**Que aprendiste de la actividad realizada?**
-Se aprendio a identificar clases de un dominio y traducirlas a modelos de base de datos relacional, usando una arquitectura web con separacion de capas (frontend, backend, BD).
-
-**En que ambitos puedes utilizar o aplicar lo realizado?**
-En cualquier sistema que requiera gestion de usuarios y registro de eventos con marca de tiempo: control de acceso, inventarios, logs, etc.
-
-**Hubo algun termino o parte del proceso que necesites reforzar?**
-La differencia entre clases en C# (orientado a objetos) y modelos en Sequelize (ORM para JavaScript), y como los queries raw SQL se adaptan al dialecto de cada base de datos.
