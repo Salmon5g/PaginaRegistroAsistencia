@@ -1,6 +1,7 @@
 'use strict';
 const { QueryTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const { obtenerInasistentes } = require('../services/reportes');
 
 const reporteAtrasos = async (req, res) => {
   try {
@@ -63,25 +64,20 @@ const reporteInasistencias = async (req, res) => {
     const { fecha } = req.query;
     const fechaConsulta = fecha || new Date().toISOString().split('T')[0];
 
-    const resultados = await sequelize.query(`
-      SELECT
-        u.id AS usuario_id,
-        u.nombre,
-        u.email
-      FROM usuarios u
-      WHERE u.estado = 'activo'
-        AND u.id NOT IN (
-          SELECT a.usuario_id
-          FROM asistencias a
-          WHERE DATE(a.fecha_hora) = :fecha
-        )
-      ORDER BY u.nombre ASC
-    `, {
-      replacements: { fecha: fechaConsulta },
-      type: QueryTypes.SELECT,
-    });
+    const usuarios = await sequelize.query(
+      'SELECT id, nombre, email, estado FROM usuarios ORDER BY nombre ASC',
+      { type: QueryTypes.SELECT }
+    );
 
-    res.json({ ok: true, fecha: fechaConsulta, data: resultados });
+    const marcas = await sequelize.query(
+      'SELECT usuario_id, fecha_hora FROM asistencias',
+      { type: QueryTypes.SELECT }
+    );
+
+    const resultado = obtenerInasistentes(usuarios, marcas, fechaConsulta)
+      .map((u) => ({ usuario_id: u.id, nombre: u.nombre, email: u.email }));
+
+    res.json({ ok: true, fecha: fechaConsulta, data: resultado });
   } catch (err) {
     res.status(500).json({ ok: false, message: 'Error al generar reporte de inasistencias.' });
   }

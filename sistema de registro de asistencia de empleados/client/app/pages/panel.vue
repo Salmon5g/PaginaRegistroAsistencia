@@ -43,6 +43,7 @@
         <NuxtLink to="/asistencias">Ver mis asistencias &rarr;</NuxtLink>
         <template v-if="usuario?.rol === 'administrador'">
           <NuxtLink to="/usuarios">Gestion de usuarios &rarr;</NuxtLink>
+          <NuxtLink to="/reportes">Reportes (atrasos, salidas, inasistencias) &rarr;</NuxtLink>
         </template>
       </nav>
     </main>
