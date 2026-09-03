@@ -41,6 +41,9 @@
 
       <nav class="panel__links">
         <NuxtLink to="/asistencias">Ver mis asistencias &rarr;</NuxtLink>
+        <template v-if="usuario?.rol === 'administrador'">
+          <NuxtLink to="/usuarios">Gestion de usuarios &rarr;</NuxtLink>
+        </template>
       </nav>
     </main>
   </div>
@@ -191,6 +194,9 @@ function logout() {
 .panel__links {
   margin-top: 24px;
   font-weight: 600;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 @media (max-width: 480px) {
