@@ -2,6 +2,22 @@
 const { QueryTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const { obtenerInasistentes } = require('../services/reportes');
+const { generarPdf } = require('../services/pdfReportes');
+
+function responderPdf(req, res, tipo, data, meta) {
+  if (req.query.formato !== 'pdf') return false;
+  generarPdf(tipo, data, meta)
+    .then((buffer) => {
+      const fecha = new Date().toISOString().slice(0, 10);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="reporte_${tipo}_${fecha}.pdf"`);
+      res.end(buffer);
+    })
+    .catch(() => {
+      res.status(500).json({ ok: false, message: 'Error al generar el PDF.' });
+    });
+  return true;
+}
 
 const reporteAtrasos = async (req, res) => {
   try {
@@ -25,6 +41,7 @@ const reporteAtrasos = async (req, res) => {
       ORDER BY total_atrasos DESC
     `, { type: QueryTypes.SELECT });
 
+    if (responderPdf(req, res, 'atrasos', resultados, { desde, hasta })) return;
     res.json({ ok: true, data: resultados });
   } catch (err) {
     res.status(500).json({ ok: false, message: 'Error al generar reporte de atrasos.' });
@@ -53,6 +70,7 @@ const reporteSalidasAnticipadas = async (req, res) => {
       ORDER BY total_salidas_anticipadas DESC
     `, { type: QueryTypes.SELECT });
 
+    if (responderPdf(req, res, 'salidas', resultados, { desde, hasta })) return;
     res.json({ ok: true, data: resultados });
   } catch (err) {
     res.status(500).json({ ok: false, message: 'Error al generar reporte de salidas anticipadas.' });
@@ -77,6 +95,7 @@ const reporteInasistencias = async (req, res) => {
     const resultado = obtenerInasistentes(usuarios, marcas, fechaConsulta)
       .map((u) => ({ usuario_id: u.id, nombre: u.nombre, email: u.email }));
 
+    if (responderPdf(req, res, 'inasistencias', resultado, { fecha: fechaConsulta })) return;
     res.json({ ok: true, fecha: fechaConsulta, data: resultado });
   } catch (err) {
     res.status(500).json({ ok: false, message: 'Error al generar reporte de inasistencias.' });

@@ -37,7 +37,14 @@
             <label for="fecha-inasistencia">Dia a evaluar</label>
             <input id="fecha-inasistencia" v-model="fechaInasistencia" type="date" @change="cargar" />
           </div>
-          <button class="btn btn--primary" :disabled="cargando" @click="cargar">
+          <div class="form-group reportes__filtro reportes__filtro--formato">
+            <label :for="'formato-' + tabActiva">Formato</label>
+            <select :id="'formato-' + tabActiva" v-model="formato">
+              <option value="web">Web (pantalla)</option>
+              <option value="pdf">PDF (descargar)</option>
+            </select>
+          </div>
+          <button class="btn btn--primary" :disabled="cargando" @click="generar">
             {{ cargando ? 'Generando...' : 'Generar' }}
           </button>
         </div>
@@ -174,6 +181,7 @@ const tabActiva = ref('atrasos');
 const desde = ref('');
 const hasta = ref('');
 const fechaInasistencia = ref(new Date().toISOString().split('T')[0]);
+const formato = ref('web');
 const datos = ref([]);
 const inasistentes = ref([]);
 const cargando = ref(false);
@@ -205,6 +213,69 @@ function barraAncho(valor) {
 onMounted(async () => {
   await cargar();
 });
+
+async function generar() {
+  if (formato.value === 'pdf') {
+    await descargarPdf();
+    return;
+  }
+  await cargar();
+}
+
+function guardarBlob(blob, nombre) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombre;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function descargarPdf() {
+  if (!token()) return navigateTo('/login');
+
+  cargando.value = true;
+  errorGlobal.value = false;
+  mensaje.value = '';
+  try {
+    let url = `${config.public.apiBase}/reportes/`;
+
+    if (tabActiva.value === 'atrasos') {
+      url += 'atrasos';
+    } else if (tabActiva.value === 'salidas') {
+      url += 'salidas-anticipadas';
+    } else {
+      url += 'inasistencias';
+    }
+
+    const params = new URLSearchParams();
+    if (tabActiva.value !== 'inasistencias') {
+      if (desde.value) params.set('desde', desde.value);
+      if (hasta.value) params.set('hasta', hasta.value);
+    } else if (fechaInasistencia.value) {
+      params.set('fecha', fechaInasistencia.value);
+    }
+    params.set('formato', 'pdf');
+    const qs = params.toString();
+    if (qs) url += `?${qs}`;
+
+    const res = await $fetch.raw(url, {
+      headers: { Authorization: `Bearer ${token()}` },
+      responseType: 'blob',
+    });
+
+    const nombre = `reporte_${tabActiva.value}_${new Date().toISOString().slice(0, 10)}.pdf`;
+    guardarBlob(res._data, nombre);
+    mensaje.value = 'Reporte PDF descargado correctamente.';
+  } catch (e) {
+    errorGlobal.value = true;
+    mensaje.value = e?.data?.message || 'Error al generar el PDF.';
+  } finally {
+    cargando.value = false;
+  }
+}
 
 async function cargar() {
   if (!token()) return navigateTo('/login');
@@ -337,6 +408,27 @@ async function cargar() {
 
 .reportes__filtro input {
   width: 100%;
+}
+
+.reportes__filtro--formato {
+  min-width: 170px;
+}
+
+.reportes__filtro select {
+  width: 100%;
+  font: inherit;
+  padding: 12px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #ffffff;
+  appearance: auto;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.reportes__filtro select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
 
 .reportes__resumen {
