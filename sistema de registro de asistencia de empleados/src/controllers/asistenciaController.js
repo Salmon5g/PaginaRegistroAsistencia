@@ -1,8 +1,22 @@
+/**
+ * @file Controlador de registro y consulta de asistencias (marcas de
+ * entrada/salida).
+ * @module controllers/asistenciaController
+ */
+
 'use strict';
 const { Asistencia, Usuario } = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 
+/**
+ * Registra una marca de entrada o salida para el usuario autenticado.
+ * Valida que la secuencia sea correcta: no se puede marcar dos entradas
+ * seguidas en el mismo dia, ni una salida sin una entrada previa ese dia.
+ * @name registrar
+ * @function
+ * @description Registra una nueva asistencia (entrada o salida).
+ */
 const registrar = async (req, res) => {
   try {
     const { tipo } = req.body;
@@ -47,6 +61,10 @@ const registrar = async (req, res) => {
   }
 };
 
+/**
+ * Lista las asistencias del usuario autenticado, de la mas reciente a la
+ * mas antigua.
+ **/
 const listarMisAsistencias = async (req, res) => {
   try {
     const asistencias = await Asistencia.findAll({
@@ -59,6 +77,11 @@ const listarMisAsistencias = async (req, res) => {
   }
 };
 
+/**
+ * Lista todas las asistencias del sistema (de todos los usuarios), incluyendo
+ * los datos basicos del usuario asociado a cada marca. Requiere privilegios
+ * de administrador.
+ **/
 const listarTodas = async (req, res) => {
   try {
     const asistencias = await Asistencia.findAll({

@@ -1,6 +1,19 @@
+/**
+ * @file Controlador CRUD de usuarios.
+ * Todas las rutas que usan estas funciones requieren autenticacion y
+ * privilegios de administrador (ver `middlewares/auth.js`).
+ * @module controllers/usuarioController
+ */
+
 'use strict';
 const { Usuario } = require('../models');
 
+/**
+ * Lista todos los usuarios, ordenados alfabeticamente por nombre.
+ * @function listar
+ * @param {import('express').Request} req - Peticion HTTP.
+ * @param {import('express').Response} res - Respuesta HTTP.
+ **/
 const listar = async (req, res) => {
   try {
     const usuarios = await Usuario.findAll({ order: [['nombre', 'ASC']] });
@@ -10,6 +23,12 @@ const listar = async (req, res) => {
   }
 };
 
+/**
+ * @function obtenerPorId
+ * @param {import('express').Request} req - Peticion HTTP. `req.params.id` es el ID del usuario.
+ * @param {import('express').Response} res - Respuesta HTTP.
+ * @returns {Promise<void>} Responde con `{ ok, data }` (200), 404 si no existe, o 500 ante error.
+ */
 const obtenerPorId = async (req, res) => {
   try {
     const usuario = await Usuario.findByPk(req.params.id);
@@ -22,6 +41,10 @@ const obtenerPorId = async (req, res) => {
   }
 };
 
+/**
+ * Crea un nuevo usuario. El password se hashea automaticamente mediante el
+ * hook `beforeCreate` del modelo `Usuario`.
+ **/
 const crear = async (req, res) => {
   try {
     const { nombre, email, password, rol } = req.body;
@@ -40,6 +63,11 @@ const crear = async (req, res) => {
   }
 };
 
+/**
+ * Actualiza los datos de un usuario existente. Si se incluye `password` en
+ * el cuerpo, se re-hashea automaticamente mediante el hook `beforeUpdate`
+ * del modelo `Usuario`.
+ **/
 const actualizar = async (req, res) => {
   try {
     const usuario = await Usuario.findByPk(req.params.id);
@@ -59,6 +87,14 @@ const actualizar = async (req, res) => {
   }
 };
 
+/**
+ * Elimina un usuario (lo desactiva).
+ * @async
+ * @function eliminar
+ * @param {import('express').Request} req - Peticion HTTP. `req.params.id` es el ID del usuario.
+ * @param {import('express').Response} res - Respuesta HTTP.
+ * @returns {Promise<void>} Responde con `{ ok, message }` (200) o 500 ante error.
+ */
 const eliminar = async (req, res) => {
   try {
     const usuario = await Usuario.findByPk(req.params.id);
