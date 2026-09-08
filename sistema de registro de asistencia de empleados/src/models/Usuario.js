@@ -1,8 +1,21 @@
+/**
+ * @file Modelo Sequelize para la tabla `usuarios`.
+ * Representa a las personas que pueden autenticarse en el sistema
+ * (administradores o empleados) y registrar asistencias.
+ * @module models/Usuario
+ */
+
 'use strict';
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const bcrypt = require('bcryptjs');
 
+/**
+ * Define el modelo Sequelize para la tabla `usuarios`.
+ * Sus columnas son id, nombre, email, password, rol y estado.
+ * @param {import('sequelize').Sequelize} sequelize - La instancia de Sequelize.
+ * @returns {import('sequelize').ModelCtor<import('sequelize').Model>} El modelo Sequelize para la tabla `usuarios`.
+ */
 const Usuario = sequelize.define('Usuario', {
   id: {
     type: DataTypes.INTEGER,
@@ -52,10 +65,19 @@ const Usuario = sequelize.define('Usuario', {
   },
 });
 
+/**
+ * Compara una contraseña proporcionada con la contraseña almacenada en la base de datos.
+ * @param {string} password - La contraseña a comparar.
+ * @returns {Promise<boolean>} Verdadero si las contraseñas coinciden, falso en caso contrario.
+ */
 Usuario.prototype.validarPassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
 
+/**
+ * Sobrescribe el método toJSON para excluir la contraseña al serializar el modelo.
+ * @returns {Object} El objeto serializado del usuario sin la contraseña.
+ */
 Usuario.prototype.toJSON = function () {
   const values = Object.assign({}, this.get());
   delete values.password;
