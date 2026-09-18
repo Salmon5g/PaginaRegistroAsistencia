@@ -50,6 +50,14 @@ test('registrar: rechaza una segunda entrada el mismo dia', async (t) => {
   assert.equal(res.body.message, 'Ya registraste tu entrada hoy. Debes marcar tu salida.');
 });
 
+test('registrar: rechaza entrada cuando la jornada ya esta completa', async (t) => {
+  t.mock.method(Asistencia, 'findOne', async () => ({ tipo: 'salida' }));
+  const res = makeResponse();
+  await registrar(makeRequest({ body: { tipo: 'entrada' } }), res);
+  assert.equal(res.statusCode, 400);
+  assert.equal(res.body.message, 'Tu jornada de hoy ya esta completada. Vuelve manana.');
+});
+
 test('registrar: rechaza salida sin entrada previa', async (t) => {
   t.mock.method(Asistencia, 'findOne', async () => null);
   const res = makeResponse();

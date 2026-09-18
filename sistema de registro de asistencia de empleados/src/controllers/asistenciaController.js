@@ -43,8 +43,11 @@ const registrar = async (req, res) => {
       if (ultima && ultima.tipo === 'entrada') {
         return res.status(400).json({ ok: false, message: 'Ya registraste tu entrada hoy. Debes marcar tu salida.' });
       }
+      if (ultima && ultima.tipo === 'salida') {
+        return res.status(400).json({ ok: false, message: 'Tu jornada de hoy ya esta completada. Vuelve manana.' });
+      }
     } else {
-      if (!ultima || ultima.tipo === 'salida') {
+      if (!ultima || ultima.tipo !== 'entrada') {
         return res.status(400).json({ ok: false, message: 'Debes marcar tu entrada antes de registrar la salida.' });
       }
     }
