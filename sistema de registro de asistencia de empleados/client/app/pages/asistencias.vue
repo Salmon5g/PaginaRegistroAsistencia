@@ -1,30 +1,35 @@
 <template>
-  <div class="page asistencias">
-    <div class="card">
-      <span class="badge">Quimicos SPA</span>
-      <h1 class="asistencias__title">Mis Asistencias</h1>
+  <div class="page">
+    <header class="page-header">
+      <div>
+        <p class="breadcrumb"><NuxtLink to="/panel">Panel</NuxtLink></p>
+        <h1 class="page-header__title">Mis Asistencias</h1>
+        <p class="page-header__subtitle">Historial de tus entradas y salidas registradas.</p>
+      </div>
+    </header>
 
+    <div class="card">
       <div v-if="asistencias.length" class="table-wrap">
         <table>
           <thead>
             <tr>
               <th>Tipo</th>
-              <th>Fecha y Hora</th>
+              <th>Fecha y hora</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="a in asistencias" :key="a.id">
-              <td>{{ a.tipo }}</td>
+              <td>
+                <span :class="['tipo-badge', a.tipo === 'entrada' ? 'tipo-badge--entrada' : 'tipo-badge--salida']">
+                  {{ a.tipo }}
+                </span>
+              </td>
               <td>{{ new Date(a.fecha_hora).toLocaleString() }}</td>
             </tr>
           </tbody>
         </table>
       </div>
-      <p v-else class="empty-state">No hay registros por el momento.</p>
-
-      <p class="asistencias__foot">
-        <NuxtLink to="/panel">&larr; Volver al panel</NuxtLink>
-      </p>
+      <p v-else class="empty-state">Aun no hay registros de asistencia.</p>
     </div>
   </div>
 </template>
@@ -48,26 +53,33 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.asistencias {
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 32px 24px;
-}
-
-.asistencias .card {
-  width: 100%;
-  max-width: 640px;
-}
-
-.asistencias__title {
-  font-size: 1.6rem;
-  margin-bottom: 20px;
-}
-
-.asistencias__foot {
-  margin-top: 20px;
+.tipo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.76rem;
   font-weight: 600;
+  text-transform: capitalize;
+}
+
+.tipo-badge::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+}
+
+.tipo-badge--entrada {
+  background: var(--success-light);
+  color: var(--success-dark);
+}
+
+.tipo-badge--salida {
+  background: var(--primary-light);
+  color: var(--primary-dark);
 }
 </style>

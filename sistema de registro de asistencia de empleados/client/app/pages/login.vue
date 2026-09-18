@@ -1,8 +1,9 @@
 <template>
   <div class="page page--center">
     <div class="card login-card">
+      <span class="login-card__logo">Q</span>
       <span class="badge">Quimicos SPA</span>
-      <h1 class="login-card__title">Iniciar Sesion</h1>
+      <h1 class="login-card__title">Iniciar sesion</h1>
       <p class="login-card__subtitle">Ingresa tus credenciales para continuar</p>
 
       <form @submit.prevent="handleLogin">
@@ -28,6 +29,8 @@
 </template>
 
 <script setup>
+definePageMeta({ layout: 'centered' });
+
 const config = useRuntimeConfig();
 const email = ref('');
 const password = ref('');
@@ -48,7 +51,7 @@ async function handleLogin() {
       navigateTo('/panel');
     }
   } catch (e) {
-    error.value = 'Credenciales invalidas';
+    error.value = 'Credenciales invalidas. Verifica tu email y contrasena.';
   } finally {
     cargando.value = false;
   }
@@ -62,6 +65,25 @@ async function handleLogin() {
   padding: 40px;
 }
 
+.login-card__logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-darker));
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 24px rgba(79, 70, 229, 0.38);
+  margin-bottom: 16px;
+}
+
+.login-card .badge {
+  margin-bottom: 6px;
+}
+
 .login-card__title {
   font-size: 1.6rem;
   margin-bottom: 4px;
@@ -70,11 +92,16 @@ async function handleLogin() {
 .login-card__subtitle {
   color: var(--muted);
   margin-bottom: 24px;
+  font-size: 0.95rem;
 }
 
 .login-card__foot {
   margin-top: 20px;
   font-size: 0.9rem;
   text-align: center;
+}
+
+.login-card__foot a {
+  font-weight: 600;
 }
 </style>

@@ -1,21 +1,24 @@
 <template>
-  <div class="page usuarios">
-    <header class="usuarios__header">
+  <div class="page">
+    <header class="page-header">
       <div>
-        <h1 class="usuarios__title">Gestion de Usuarios</h1>
-        <p class="usuarios__welcome">Administra los accesos al sistema de asistencia.</p>
+        <p class="breadcrumb"><NuxtLink to="/panel">Panel</NuxtLink></p>
+        <h1 class="page-header__title">Gestion de Usuarios</h1>
+        <p class="page-header__subtitle">Administra los accesos al sistema de asistencia.</p>
       </div>
-      <div class="usuarios__header-actions">
-        <NuxtLink to="/panel" class="btn btn--ghost">&larr; Panel</NuxtLink>
-        <button class="btn btn--primary" @click="abrirNuevo">Nuevo Usuario</button>
+      <div class="page-header__actions">
+        <button class="btn btn--primary" @click="abrirNuevo">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+          Nuevo Usuario
+        </button>
       </div>
     </header>
 
-    <main class="usuarios__body">
-      <p v-if="mensaje" :class="['alert', errorGlobal ? 'alert--error' : 'alert--success']">
-        {{ mensaje }}
-      </p>
+    <p v-if="mensaje" :class="['alert', errorGlobal ? 'alert--error' : 'alert--success']">
+      {{ mensaje }}
+    </p>
 
+    <div class="card">
       <div v-if="cargando" class="empty-state">Cargando usuarios...</div>
 
       <div v-else-if="usuarios.length" class="table-wrap">
@@ -31,7 +34,12 @@
           </thead>
           <tbody>
             <tr v-for="u in usuarios" :key="u.id">
-              <td>{{ u.nombre }}</td>
+              <td>
+                <div class="usuarios__nombre">
+                  <span class="usuarios__avatar">{{ iniciales(u.nombre) }}</span>
+                  <span>{{ u.nombre }}</span>
+                </div>
+              </td>
               <td>{{ u.email }}</td>
               <td>
                 <span :class="['tag', u.rol === 'administrador' ? 'tag--admin' : 'tag--empleado']">
@@ -44,9 +52,10 @@
                 </span>
               </td>
               <td class="usuarios__col-acciones">
-                <button class="btn btn--small" @click="abrirEditar(u)">Editar</button>
+                <button class="btn btn--small btn--ghost" @click="abrirEditar(u)">Editar</button>
                 <button
-                  class="btn btn--small btn--danger"
+                  class="btn btn--small"
+                  :class="u.estado === 'activo' ? 'btn--danger' : 'btn--success'"
                   :disabled="u.id === usuarioActual?.id"
                   @click="eliminar(u)"
                 >
@@ -58,11 +67,14 @@
         </table>
       </div>
       <p v-else class="empty-state">No hay usuarios registrados.</p>
-    </main>
+    </div>
 
     <div v-if="modalVisible" class="modal" @click.self="cerrar">
       <div class="modal__card">
-        <h2 class="modal__title">{{ editando ? 'Editar Usuario' : 'Nuevo Usuario' }}</h2>
+        <div class="modal__head">
+          <h2 class="modal__title">{{ editando ? 'Editar Usuario' : 'Nuevo Usuario' }}</h2>
+          <button class="modal__close" aria-label="Cerrar" @click="cerrar">&times;</button>
+        </div>
 
         <p v-if="errorForm" class="alert alert--error">{{ errorForm }}</p>
 
@@ -147,6 +159,15 @@ function usuarioDeStorage() {
     }
   }
   return null;
+}
+
+function iniciales(nombre) {
+  return (nombre || 'U')
+    .split(/\s+/)
+    .map((p) => p[0] || '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 onMounted(async () => {
@@ -260,36 +281,26 @@ async function eliminar(u) {
 </script>
 
 <style scoped>
-.usuarios {
-  padding: 32px 24px;
-}
-
-.usuarios__header {
-  max-width: 880px;
-  margin: 0 auto 24px;
+.usuarios__nombre {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.usuarios__title {
-  font-size: 1.7rem;
-}
-
-.usuarios__welcome {
-  color: var(--muted);
-}
-
-.usuarios__header-actions {
-  display: flex;
   gap: 10px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.usuarios__body {
-  max-width: 880px;
-  margin: 0 auto;
+.usuarios__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
 }
 
 .usuarios__col-acciones {
@@ -297,66 +308,16 @@ async function eliminar(u) {
   white-space: nowrap;
 }
 
-.tag {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: capitalize;
-}
-
-.tag--admin {
-  background: var(--primary-light);
-  color: var(--primary-dark);
-}
-
-.tag--empleado {
-  background: #f3f4f6;
-  color: var(--muted);
-}
-
-.tag--activo {
-  background: var(--success-light);
-  color: var(--success);
-}
-
-.tag--inactivo {
-  background: var(--danger-light);
-  color: var(--danger);
-}
-
-.btn--large {
-  padding: 12px 22px;
-}
-
-.btn--ghost {
-  background: transparent;
-  color: var(--primary);
-  border: 1px solid #d1d5db;
-}
-
-.btn--ghost:hover {
-  background: var(--primary-light);
-}
-
-.btn--small {
-  padding: 7px 12px;
-  font-size: 0.82rem;
-  background: var(--primary-light);
-  color: var(--primary-dark);
+.usuarios__col-acciones .btn + .btn {
   margin-left: 6px;
 }
 
-.btn--small:hover {
-  background: var(--primary-dark);
-  color: #ffffff;
-}
-
+/* ---------- Modal ---------- */
 .modal {
   position: fixed;
   inset: 0;
-  background: rgba(31, 41, 55, 0.45);
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -365,17 +326,46 @@ async function eliminar(u) {
 }
 
 .modal__card {
-  background: #ffffff;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--card-shadow);
-  padding: 32px;
+  box-shadow: var(--shadow-lg);
+  padding: 28px;
   width: 100%;
   max-width: 460px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+
+.modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .modal__title {
-  font-size: 1.4rem;
-  margin-bottom: 20px;
+  font-size: 1.35rem;
+}
+
+.modal__close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modal__close:hover {
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .modal__actions {
@@ -383,21 +373,5 @@ async function eliminar(u) {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 8px;
-}
-
-.form-group select {
-  width: 100%;
-  font: inherit;
-  padding: 12px 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  background: #ffffff;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.form-group select:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
 </style>

@@ -1,19 +1,25 @@
 <template>
-  <div class="page panel">
-    <header class="panel__header">
+  <div class="page">
+    <header class="page-header">
       <div>
-        <h1 class="panel__title">Panel de Asistencia</h1>
-        <p class="panel__welcome">Bienvenido, <strong>{{ usuario?.nombre }}</strong></p>
+        <h1 class="page-header__title">Panel de Asistencia</h1>
+        <p class="page-header__subtitle">
+          Bienvenido, <strong>{{ usuario?.nombre }}</strong>. Registra tu jornada de hoy.
+        </p>
       </div>
-      <a href="#" class="btn btn--danger" @click.prevent="logout">Cerrar sesion</a>
     </header>
 
-    <main class="panel__body">
-      <div class="card">
-        <h2 class="panel__subtitle">Registrar asistencia</h2>
-        <p class="panel__hint">
-          Marca tu entrada y luego tu salida para registrar tu jornada de hoy.
-        </p>
+    <div class="panel__grid">
+      <section class="card panel__card">
+        <div class="panel__heading">
+          <span class="panel__heading-icon">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+          </span>
+          <div>
+            <h2 class="panel__subtitle">Registrar asistencia</h2>
+            <p class="panel__hint">Marca tu entrada y luego tu salida para registrar tu jornada de hoy.</p>
+          </div>
+        </div>
 
         <p v-if="estadoTexto" class="panel__estado">{{ estadoTexto }}</p>
 
@@ -23,6 +29,7 @@
             :disabled="cargando || !puedeEntrada"
             @click="registrarAsistencia('entrada')"
           >
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><polyline points="8 12 12 16 16 12" /><line x1="12" y1="8" x2="12" y2="16" /></svg>
             Marcar Entrada
           </button>
           <button
@@ -30,6 +37,7 @@
             :disabled="cargando || !puedeSalida"
             @click="registrarAsistencia('salida')"
           >
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><polyline points="16 12 12 8 8 12" /><line x1="12" y1="16" x2="12" y2="8" /></svg>
             Marcar Salida
           </button>
         </div>
@@ -37,16 +45,44 @@
         <p v-if="mensaje" :class="['alert', errorRegistro ? 'alert--error' : 'alert--success']">
           {{ mensaje }}
         </p>
-      </div>
+      </section>
 
-      <nav class="panel__links">
-        <NuxtLink to="/asistencias">Ver mis asistencias &rarr;</NuxtLink>
+      <nav class="card panel__links">
+        <h2 class="panel__links-title">Accesos rapidos</h2>
+
+        <NuxtLink to="/asistencias" class="panel__link">
+          <span class="panel__link-icon">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></svg>
+          </span>
+          <span class="panel__link-text">
+            Mis asistencias
+            <small>Historial de entradas y salidas</small>
+          </span>
+        </NuxtLink>
+
         <template v-if="usuario?.rol === 'administrador'">
-          <NuxtLink to="/usuarios">Gestion de usuarios &rarr;</NuxtLink>
-          <NuxtLink to="/reportes">Reportes (atrasos, salidas, inasistencias) &rarr;</NuxtLink>
+          <NuxtLink to="/usuarios" class="panel__link">
+            <span class="panel__link-icon">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+            </span>
+            <span class="panel__link-text">
+              Gestion de Usuarios
+              <small>Administra los accesos al sistema</small>
+            </span>
+          </NuxtLink>
+
+          <NuxtLink to="/reportes" class="panel__link">
+            <span class="panel__link-icon">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" /></svg>
+            </span>
+            <span class="panel__link-text">
+              Reportes
+              <small>Atrasos, salidas y inasistencias</small>
+            </span>
+          </NuxtLink>
         </template>
       </nav>
-    </main>
+    </div>
   </div>
 </template>
 
@@ -118,86 +154,152 @@ async function registrarAsistencia(tipo) {
     cargando.value = false;
   }
 }
-
-function logout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('usuario');
-  navigateTo('/login');
-}
 </script>
 
 <style scoped>
-.panel {
-  padding: 32px 24px;
+.panel__grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 24px;
+  align-items: start;
 }
 
-.panel__header {
-  max-width: 720px;
-  margin: 0 auto 24px;
+.panel__heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.panel__heading-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--primary-light);
+  color: var(--primary-dark);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+  justify-content: center;
+  flex: none;
 }
 
-.panel__title {
-  font-size: 1.7rem;
-}
-
-.panel__welcome {
-  color: var(--muted);
-}
-
-.panel__body {
-  max-width: 720px;
-  margin: 0 auto;
+.panel__heading-icon .icon {
+  width: 22px;
+  height: 22px;
 }
 
 .panel__subtitle {
-  font-size: 1.2rem;
-  margin-bottom: 6px;
+  font-size: 1.15rem;
+  margin-bottom: 4px;
 }
 
 .panel__hint {
   color: var(--muted);
-  margin-bottom: 24px;
+  font-size: 0.9rem;
 }
 
 .panel__estado {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  border-left: 4px solid var(--primary);
   color: var(--primary-dark);
-  border-radius: 10px;
-  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
   font-weight: 600;
   font-size: 0.9rem;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+.panel__estado::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--primary);
+  margin-top: 6px;
+  flex: none;
 }
 
 .panel__actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 14px;
   margin-bottom: 8px;
 }
 
-.btn--big {
-  padding: 18px 20px;
-  font-size: 1.05rem;
+.panel__actions .btn:disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  box-shadow: none;
 }
 
-.btn--big:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
+/* ---------- Accesos rapidos ---------- */
+.panel__links-title {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+  margin-bottom: 14px;
 }
 
-.panel__links {
-  margin-top: 24px;
-  font-weight: 600;
+.panel__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  transition: all 0.15s ease;
+}
+
+.panel__link:hover {
+  border-color: var(--primary-border);
+  background: var(--primary-light);
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.panel__link-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.panel__link:hover .panel__link-icon {
+  border-color: var(--primary-border);
+}
+
+.panel__link-text {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+  min-width: 0;
+}
+
+.panel__link-text small {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.76rem;
+}
+
+@media (max-width: 900px) {
+  .panel__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 480px) {

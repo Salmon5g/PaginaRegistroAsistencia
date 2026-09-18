@@ -1,170 +1,167 @@
 <template>
-  <div class="page reportes">
-    <header class="reportes__header">
+  <div class="page">
+    <header class="page-header">
       <div>
-        <h1 class="reportes__title">Reportes</h1>
-        <p class="reportes__welcome">Genera reportes de control de asistencia para el equipo.</p>
-      </div>
-      <div class="reportes__header-actions">
-        <NuxtLink to="/panel" class="btn btn--ghost">&larr; Panel</NuxtLink>
+        <p class="breadcrumb"><NuxtLink to="/panel">Panel</NuxtLink></p>
+        <h1 class="page-header__title">Reportes</h1>
+        <p class="page-header__subtitle">Genera reportes de control de asistencia para el equipo.</p>
       </div>
     </header>
 
-    <main class="reportes__body">
-      <nav class="tabs">
-        <button
-          v-for="t in tabs"
-          :key="t.id"
-          class="tab"
-          :class="{ 'tab--active': tabActiva === t.id }"
-          @click="cambiarTab(t.id)"
-        >
-          {{ t.nombre }}
+    <nav class="tabs">
+      <button
+        v-for="t in tabs"
+        :key="t.id"
+        class="tab"
+        :class="{ 'tab--active': tabActiva === t.id }"
+        @click="cambiarTab(t.id)"
+      >
+        {{ t.nombre }}
+      </button>
+    </nav>
+
+    <div class="card reportes__content">
+      <div class="reportes__filtros">
+        <div class="form-group reportes__filtro">
+          <label :for="'desde-' + tabActiva">Desde</label>
+          <input :id="'desde-' + tabActiva" v-model="desde" type="date" @change="cargar" />
+        </div>
+        <div class="form-group reportes__filtro">
+          <label :for="'hasta-' + tabActiva">Hasta</label>
+          <input :id="'hasta-' + tabActiva" v-model="hasta" type="date" @change="cargar" />
+        </div>
+        <div class="form-group reportes__filtro" v-if="tabActiva === 'inasistencias'">
+          <label for="fecha-inasistencia">Dia a evaluar</label>
+          <input id="fecha-inasistencia" v-model="fechaInasistencia" type="date" @change="cargar" />
+        </div>
+        <div class="form-group reportes__filtro reportes__filtro--formato">
+          <label :for="'formato-' + tabActiva">Formato</label>
+          <select :id="'formato-' + tabActiva" v-model="formato">
+            <option value="web">Web (pantalla)</option>
+            <option value="pdf">PDF (descargar)</option>
+          </select>
+        </div>
+        <button class="btn btn--primary" :disabled="cargando" @click="generar">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+          {{ cargando ? 'Generando...' : 'Generar reporte' }}
         </button>
-      </nav>
-
-      <div class="card reportes__content">
-        <div class="reportes__filtros">
-          <div class="form-group reportes__filtro">
-            <label :for="'desde-' + tabActiva">Desde</label>
-            <input :id="'desde-' + tabActiva" v-model="desde" type="date" @change="cargar" />
-          </div>
-          <div class="form-group reportes__filtro">
-            <label :for="'hasta-' + tabActiva">Hasta</label>
-            <input :id="'hasta-' + tabActiva" v-model="hasta" type="date" @change="cargar" />
-          </div>
-          <div class="form-group reportes__filtro" v-if="tabActiva === 'inasistencias'">
-            <label for="fecha-inasistencia">Dia a evaluar</label>
-            <input id="fecha-inasistencia" v-model="fechaInasistencia" type="date" @change="cargar" />
-          </div>
-          <div class="form-group reportes__filtro reportes__filtro--formato">
-            <label :for="'formato-' + tabActiva">Formato</label>
-            <select :id="'formato-' + tabActiva" v-model="formato">
-              <option value="web">Web (pantalla)</option>
-              <option value="pdf">PDF (descargar)</option>
-            </select>
-          </div>
-          <button class="btn btn--primary" :disabled="cargando" @click="generar">
-            {{ cargando ? 'Generando...' : 'Generar' }}
-          </button>
-        </div>
-
-        <div v-if="tabActiva === 'inasistencias'" class="reportes__resumen">
-          <div class="stat">
-            <span class="stat__label">Inasistentes</span>
-            <span class="stat__value">{{ inasistentes.length }}</span>
-          </div>
-          <div class="stat">
-            <span class="stat__label">Dia</span>
-            <span class="stat__value stat__value--center">{{ fechaInasistencia || 'Hoy' }}</span>
-          </div>
-        </div>
-
-        <div v-else class="reportes__resumen">
-          <div class="stat">
-            <span class="stat__label">Empleados con registros</span>
-            <span class="stat__value">{{ datos.length }}</span>
-          </div>
-          <div class="stat">
-            <span class="stat__label">{{ tabActiva === 'atrasos' ? 'Total atrasos' : 'Total salidas anticipadas' }}</span>
-            <span class="stat__value">{{ totalRegistros }}</span>
-          </div>
-        </div>
-
-        <p v-if="mensaje" :class="['alert', errorGlobal ? 'alert--error' : 'alert--success']">
-          {{ mensaje }}
-        </p>
-
-        <div v-if="cargando" class="empty-state">Generando reporte...</div>
-
-        <!-- RE-01: Reporte de atrasos -->
-        <template v-else-if="tabActiva === 'atrasos'">
-          <div v-if="datos.length" class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Empleado</th>
-                  <th>Email</th>
-                  <th>Total atrasos</th>
-                  <th>Fechas de atraso</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="d in datos" :key="d.usuario_id">
-                  <td>{{ d.nombre }}</td>
-                  <td>{{ d.email }}</td>
-                  <td>
-                    <div class="barra">
-                      <span
-                        class="barra__relleno"
-                        :style="{ width: barraAncho(d.total_atrasos) }"
-                      ></span>
-                    </div>
-                    <span class="barra__valor">{{ d.total_atrasos }}</span>
-                  </td>
-                  <td class="reportes__fechas">{{ d.fechas_atraso }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p v-else class="empty-state">No se encontraron atrasos en el periodo.</p>
-        </template>
-
-        <!-- RE-02: Reporte de salidas anticipadas -->
-        <template v-else-if="tabActiva === 'salidas'">
-          <div v-if="datos.length" class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Empleado</th>
-                  <th>Email</th>
-                  <th>Total salidas anticipadas</th>
-                  <th>Fechas de salida</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="d in datos" :key="d.usuario_id">
-                  <td>{{ d.nombre }}</td>
-                  <td>{{ d.email }}</td>
-                  <td>
-                    <div class="barra">
-                      <span
-                        class="barra__relleno"
-                        :style="{ width: barraAncho(d.total_salidas_anticipadas) }"
-                      ></span>
-                    </div>
-                    <span class="barra__valor">{{ d.total_salidas_anticipadas }}</span>
-                  </td>
-                  <td class="reportes__fechas">{{ d.fechas_salida }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p v-else class="empty-state">No se encontraron salidas anticipadas en el periodo.</p>
-        </template>
-
-        <!-- RE-03: Reporte de inasistencias -->
-        <template v-else>
-          <div v-if="inasistentes.length" class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Empleado</th>
-                  <th>Email</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="d in inasistentes" :key="d.usuario_id">
-                  <td>{{ d.nombre }}</td>
-                  <td>{{ d.email }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          <p v-else class="empty-state">Todos los empleados registraron asistencia ese dia.</p>
-        </template>
       </div>
-    </main>
+
+      <div v-if="tabActiva === 'inasistencias'" class="reportes__resumen">
+        <div class="stat">
+          <span class="stat__label">Inasistentes</span>
+          <span class="stat__value">{{ inasistentes.length }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat__label">Dia</span>
+          <span class="stat__value stat__value--center">{{ fechaInasistencia || 'Hoy' }}</span>
+        </div>
+      </div>
+
+      <div v-else class="reportes__resumen">
+        <div class="stat">
+          <span class="stat__label">Empleados con registros</span>
+          <span class="stat__value">{{ datos.length }}</span>
+        </div>
+        <div class="stat">
+          <span class="stat__label">{{ tabActiva === 'atrasos' ? 'Total atrasos' : 'Total salidas anticipadas' }}</span>
+          <span class="stat__value">{{ totalRegistros }}</span>
+        </div>
+      </div>
+
+      <p v-if="mensaje" :class="['alert', errorGlobal ? 'alert--error' : 'alert--success']">
+        {{ mensaje }}
+      </p>
+
+      <div v-if="cargando" class="empty-state">Generando reporte...</div>
+
+      <!-- RE-01: Reporte de atrasos -->
+      <template v-else-if="tabActiva === 'atrasos'">
+        <div v-if="datos.length" class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Email</th>
+                <th>Total atrasos</th>
+                <th>Fechas de atraso</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="d in datos" :key="d.usuario_id">
+                <td class="reportes__empleado">{{ d.nombre }}</td>
+                <td>{{ d.email }}</td>
+                <td>
+                  <div class="barra">
+                    <span
+                      class="barra__relleno"
+                      :style="{ width: barraAncho(d.total_atrasos) }"
+                    ></span>
+                  </div>
+                  <span class="barra__valor">{{ d.total_atrasos }}</span>
+                </td>
+                <td class="reportes__fechas">{{ d.fechas_atraso }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-else class="empty-state">No se encontraron atrasos en el periodo.</p>
+      </template>
+
+      <!-- RE-02: Reporte de salidas anticipadas -->
+      <template v-else-if="tabActiva === 'salidas'">
+        <div v-if="datos.length" class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Email</th>
+                <th>Total salidas anticipadas</th>
+                <th>Fechas de salida</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="d in datos" :key="d.usuario_id">
+                <td class="reportes__empleado">{{ d.nombre }}</td>
+                <td>{{ d.email }}</td>
+                <td>
+                  <div class="barra">
+                    <span
+                      class="barra__relleno"
+                      :style="{ width: barraAncho(d.total_salidas_anticipadas) }"
+                    ></span>
+                  </div>
+                  <span class="barra__valor">{{ d.total_salidas_anticipadas }}</span>
+                </td>
+                <td class="reportes__fechas">{{ d.fechas_salida }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-else class="empty-state">No se encontraron salidas anticipadas en el periodo.</p>
+      </template>
+
+      <!-- RE-03: Reporte de inasistencias -->
+      <template v-else>
+        <div v-if="inasistentes.length" class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="d in inasistentes" :key="d.usuario_id">
+                <td class="reportes__empleado">{{ d.nombre }}</td>
+                <td>{{ d.email }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-else class="empty-state">Todos los empleados registraron asistencia ese dia.</p>
+      </template>
+    </div>
   </div>
 </template>
 
@@ -327,53 +324,22 @@ async function cargar() {
 </script>
 
 <style scoped>
-.reportes {
-  padding: 32px 24px;
-}
-
-.reportes__header {
-  max-width: 960px;
-  margin: 0 auto 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.reportes__title {
-  font-size: 1.7rem;
-}
-
-.reportes__welcome {
-  color: var(--muted);
-}
-
-.reportes__header-actions {
-  display: flex;
-  gap: 10px;
-}
-
-.reportes__body {
-  max-width: 960px;
-  margin: 0 auto;
-}
-
 .tabs {
   display: flex;
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 18px;
   flex-wrap: wrap;
 }
 
 .tab {
   font: inherit;
   font-weight: 600;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
+  font-size: 0.88rem;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
   color: var(--muted);
-  border-radius: 10px;
-  padding: 10px 18px;
+  border-radius: 999px;
+  padding: 9px 18px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -387,10 +353,11 @@ async function cargar() {
   background: var(--primary);
   border-color: var(--primary);
   color: #ffffff;
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3);
 }
 
 .reportes__content {
-  padding: 28px;
+  padding: 26px;
 }
 
 .reportes__filtros {
@@ -398,7 +365,9 @@ async function cargar() {
   gap: 14px;
   align-items: flex-end;
   flex-wrap: wrap;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border);
 }
 
 .reportes__filtro {
@@ -406,44 +375,24 @@ async function cargar() {
   min-width: 160px;
 }
 
-.reportes__filtro input {
-  width: 100%;
-}
-
 .reportes__filtro--formato {
-  min-width: 170px;
-}
-
-.reportes__filtro select {
-  width: 100%;
-  font: inherit;
-  padding: 12px 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  background: #ffffff;
-  appearance: auto;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.reportes__filtro select:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  min-width: 180px;
 }
 
 .reportes__resumen {
   display: flex;
   gap: 14px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   flex-wrap: wrap;
 }
 
 .stat {
   flex: 1;
-  min-width: 150px;
+  min-width: 160px;
   background: var(--primary-light);
-  border-radius: 12px;
-  padding: 16px;
+  border: 1px solid var(--primary-border);
+  border-radius: 14px;
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -451,28 +400,30 @@ async function cargar() {
 
 .stat__label {
   color: var(--primary-dark);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
+  letter-spacing: 0.07em;
+  font-weight: 700;
 }
 
 .stat__value {
-  font-size: 1.8rem;
-  font-weight: 700;
+  font-size: 1.9rem;
+  font-weight: 800;
   color: var(--primary-dark);
+  letter-spacing: -0.02em;
 }
 
 .stat__value--center {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   display: flex;
   align-items: center;
+  font-weight: 700;
 }
 
 .barra {
-  width: 120px;
-  height: 14px;
-  background: #e5e7eb;
+  width: 130px;
+  height: 10px;
+  background: #e2e8f0;
   border-radius: 999px;
   overflow: hidden;
   display: inline-block;
@@ -482,32 +433,27 @@ async function cargar() {
 .barra__relleno {
   display: block;
   height: 100%;
-  background: var(--primary);
+  background: linear-gradient(90deg, var(--primary), var(--primary-darker));
   border-radius: 999px;
   transition: width 0.3s ease;
 }
 
 .barra__valor {
-  margin-left: 8px;
-  font-weight: 700;
+  margin-left: 10px;
+  font-weight: 800;
   color: var(--primary-dark);
   vertical-align: middle;
 }
 
+.reportes__empleado {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .reportes__fechas {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--muted);
   max-width: 380px;
   white-space: normal;
-}
-
-.btn--ghost {
-  background: transparent;
-  color: var(--primary);
-  border: 1px solid #d1d5db;
-}
-
-.btn--ghost:hover {
-  background: var(--primary-light);
 }
 </style>

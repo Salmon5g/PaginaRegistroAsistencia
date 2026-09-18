@@ -1,16 +1,47 @@
+/* ============================================================
+   Design System - Quimicos SPA
+   Sistema de Registro de Asistencia
+   Estilo: Moderno corporativo
+   ============================================================ */
+
 :root {
+  --font: 'Inter', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+
   --primary: #4f46e5;
   --primary-dark: #4338ca;
+  --primary-darker: #3730a3;
   --primary-light: #eef2ff;
+  --primary-border: #c7d2fe;
+
   --success: #16a34a;
+  --success-dark: #15803d;
   --success-light: #dcfce7;
+  --success-border: #bbf7d0;
+
   --danger: #dc2626;
+  --danger-dark: #b91c1c;
   --danger-light: #fee2e2;
-  --text: #1f2937;
-  --muted: #6b7280;
-  --bg: #f1f5f9;
-  --card-shadow: 0 10px 30px rgba(31, 41, 55, 0.08);
-  --radius: 14px;
+  --danger-border: #fecaca;
+
+  --warning: #d97706;
+  --warning-dark: #b45309;
+  --warning-light: #fffbeb;
+  --warning-border: #fde68a;
+
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+
+  --radius: 16px;
+  --radius-sm: 10px;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 12px 32px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.16);
+  --ring: 0 0 0 4px rgba(79, 70, 229, 0.14);
 }
 
 * {
@@ -25,10 +56,15 @@ body {
 }
 
 body {
-  font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
-  background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 45%, #e0e7ff 100%);
+  font-family: var(--font);
+  background:
+    radial-gradient(1100px 540px at 100% 0%, #eef2ff 0%, transparent 55%),
+    radial-gradient(900px 500px at -10% 100%, #ecfeff 0%, transparent 50%),
+    var(--bg);
   color: var(--text);
   line-height: 1.5;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -40,61 +76,210 @@ a:hover {
   text-decoration: underline;
 }
 
+h1,
+h2,
+h3,
+h4 {
+  color: var(--text);
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  vertical-align: middle;
+}
+
+/* ------------------------------------------------------------
+   Layout de paginas
+   ------------------------------------------------------------ */
+
 .page {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 6px 4px 48px;
 }
 
 .page--center {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  max-width: none;
+  margin: 0;
 }
+
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.page-header__title {
+  font-size: 1.65rem;
+  line-height: 1.15;
+}
+
+.page-header__subtitle {
+  color: var(--muted);
+  margin-top: 4px;
+  font-size: 0.95rem;
+}
+
+.page-header__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.breadcrumb {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.breadcrumb a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  transition: color 0.15s ease;
+}
+
+.breadcrumb a:hover {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.breadcrumb a::before {
+  content: '←';
+  font-size: 0.95rem;
+}
+
+/* ------------------------------------------------------------
+   Tarjetas
+   ------------------------------------------------------------ */
 
 .card {
-  background: #ffffff;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--card-shadow);
-  padding: 32px;
+  box-shadow: var(--shadow);
+  padding: 28px;
 }
 
+/* ------------------------------------------------------------
+   Badges y tags
+   ------------------------------------------------------------ */
+
 .badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   background: var(--primary-light);
   color: var(--primary-dark);
-  font-weight: 600;
-  font-size: 0.8rem;
-  letter-spacing: 0.05em;
+  font-weight: 700;
+  font-size: 0.74rem;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   padding: 6px 14px;
   border-radius: 999px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+}
+
+.tag::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+}
+
+.tag--admin {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+}
+
+.tag--empleado {
+  background: #f1f5f9;
+  color: var(--muted);
+}
+
+.tag--activo {
+  background: var(--success-light);
+  color: var(--success-dark);
+}
+
+.tag--inactivo {
+  background: var(--danger-light);
+  color: var(--danger-dark);
+}
+
+/* ------------------------------------------------------------
+   Botones
+   ------------------------------------------------------------ */
+
 .btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font: inherit;
   font-weight: 600;
-  border: none;
-  border-radius: 10px;
-  padding: 12px 22px;
+  font-size: 0.92rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 11px 18px;
+  line-height: 1.2;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.05s ease;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.08s ease;
+}
+
+.btn:hover {
+  text-decoration: none;
 }
 
 .btn:active {
-  transform: scale(0.98);
+  transform: translateY(1px);
 }
 
 .btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
+  transform: none;
+}
+
+.btn .icon {
+  width: 18px;
+  height: 18px;
 }
 
 .btn--primary {
   background: var(--primary);
   color: #ffffff;
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.25);
 }
 
 .btn--primary:hover {
@@ -107,7 +292,7 @@ a:hover {
 }
 
 .btn--success:hover {
-  background: #15803d;
+  background: var(--success-dark);
 }
 
 .btn--danger {
@@ -116,96 +301,184 @@ a:hover {
 }
 
 .btn--danger:hover {
-  background: #b91c1c;
+  background: var(--danger-dark);
+}
+
+.btn--ghost {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.btn--ghost:hover {
+  background: #f8fafc;
+  border-color: #a5b4fc;
+  color: var(--primary-dark);
+}
+
+.btn--small {
+  padding: 7px 12px;
+  font-size: 0.82rem;
+}
+
+.btn--big {
+  padding: 16px 22px;
+  font-size: 1.02rem;
 }
 
 .btn--block {
   width: 100%;
 }
 
+/* ------------------------------------------------------------
+   Formularios
+   ------------------------------------------------------------ */
+
 .form-group {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   text-align: left;
 }
 
 .form-group label {
   display: block;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   margin-bottom: 6px;
   color: var(--text);
 }
 
-.form-group input {
+.form-group input,
+.form-group select {
   width: 100%;
   font: inherit;
-  padding: 12px 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  background: #ffffff;
+  font-size: 0.92rem;
+  padding: 11px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.form-group input:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+.form-group input::placeholder {
+  color: #9ca3af;
 }
 
+.form-group input:hover,
+.form-group select:hover {
+  border-color: var(--primary-border);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--ring);
+}
+
+/* ------------------------------------------------------------
+   Alertas
+   ------------------------------------------------------------ */
+
 .alert {
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 0.9rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  font-size: 0.88rem;
+  font-weight: 500;
   margin-bottom: 16px;
+  border: 1px solid transparent;
 }
 
 .alert--error {
   background: var(--danger-light);
-  color: var(--danger);
+  color: var(--danger-dark);
+  border-color: var(--danger-border);
 }
 
 .alert--success {
   background: var(--success-light);
-  color: var(--success);
+  color: var(--success-dark);
+  border-color: var(--success-border);
 }
+
+/* ------------------------------------------------------------
+   Tablas
+   ------------------------------------------------------------ */
 
 .table-wrap {
   overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 0.92rem;
 }
 
 th,
 td {
   text-align: left;
-  padding: 12px 14px;
+  padding: 13px 16px;
 }
 
 thead th {
-  background: var(--primary-light);
-  color: var(--primary-dark);
-  font-size: 0.85rem;
+  background: #f8fafc;
+  color: var(--muted);
+  font-size: 0.71rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
 }
 
-tbody tr {
-  border-bottom: 1px solid #e5e7eb;
+tbody td {
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
 }
 
-tbody tr:last-child {
+tbody tr:last-child td {
   border-bottom: none;
 }
 
-tbody tr:hover {
-  background: #f9fafb;
+tbody tr {
+  transition: background 0.12s ease;
 }
+
+tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* ------------------------------------------------------------
+   Estados vacios
+   ------------------------------------------------------------ */
 
 .empty-state {
   text-align: center;
   color: var(--muted);
-  padding: 24px;
+  padding: 28px 16px;
+  font-size: 0.92rem;
+}
+
+/* ------------------------------------------------------------
+   Responsive
+   ------------------------------------------------------------ */
+
+@media (max-width: 640px) {
+  .page {
+    padding: 2px 0 40px;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  .page-header {
+    align-items: flex-start;
+  }
 }
