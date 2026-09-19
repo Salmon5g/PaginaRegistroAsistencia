@@ -1,3 +1,10 @@
+<!--
+  Pagina /panel: pantalla principal del usuario autenticado.
+  Permite marcar entrada y salida del dia, muestra el estado actual de la
+  jornada y ofrece accesos rapidos (los de administracion solo si el usuario
+  es administrador).
+-->
+
 <template>
   <div class="page">
     <header class="page-header">
@@ -87,6 +94,11 @@
 </template>
 
 <script setup>
+
+/**
+* Usuario autenticado leido desde localStorage.
+ * @type {import('vue').Ref<{id: number, nombre: string, email: string, rol: string}|null>}
+ */
 const config = useRuntimeConfig();
 const usuario = ref(null);
 const mensaje = ref('');
@@ -98,12 +110,32 @@ const puedeSalida = ref(false);
 const estadoTexto = ref('Consultando el estado de tu jornada...');
 const ultimaMarca = ref(null);
 
+/**
+ * Al montar la pagina, carga el usuario desde localStorage y consulta el
+ * estado de la jornada del dia.
+ */
 onMounted(async () => {
   const data = localStorage.getItem('usuario');
   if (data) usuario.value = JSON.parse(data);
   await cargarEstado();
 });
 
+
+/**
+ * Consulta GET {apiBase}/asistencias/mis, filtra las marcas de hoy
+ * (desde las 00:00 locales) y, segun la ultima marca, decide que botones
+ * quedan habilitados y que texto de estado se muestra:
+ *
+ * - Sin marcas hoy -> se habilita solo "Entrada".
+ * - Ultima marca entrada -> se habilita solo "Salida".
+ * - Ultima marca salida -> jornada completada, ambos botones deshabilitados.
+ *
+ * Si no hay token en localStorage, redirige a /login. Si la peticion
+ * falla, asume que no hay marcas registradas hoy.
+ *
+ * @async
+ * @returns {Promise<void>}
+ */
 async function cargarEstado() {
   cargandoEstado.value = true;
   const token = localStorage.getItem('token');
@@ -139,6 +171,17 @@ async function cargarEstado() {
   cargandoEstado.value = false;
 }
 
+
+/**
+ * Registra una marca de asistencia mediante POST {apiBase}/asistencias y
+ * vuelve a consultar el estado de la jornada para refrescar los botones.
+ *
+ * @async
+ * @param {'entrada'|'salida'} tipo - Tipo de marca a registrar.
+ * @returns {Promise<void>} Actualiza mensaje con el resultado; ante error
+ * muestra el mensaje devuelto por el backend (ej. secuencia invalida de
+ * entrada/salida).
+ */
 async function registrarAsistencia(tipo) {
   cargando.value = true;
   errorRegistro.value = false;

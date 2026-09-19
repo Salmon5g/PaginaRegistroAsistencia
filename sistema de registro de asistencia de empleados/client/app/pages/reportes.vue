@@ -1,3 +1,10 @@
+<!--
+  Pagina /reportes: reportes administrativos, solo para administradores
+  (protegida por el middleware admin).
+  Ofrece tres reportes en pestanas (atrasos, salidas anticipadas e
+  inasistencias), filtrables por fecha, con salida en pantalla o descarga PDF.
+-->
+
 <template>
   <div class="page">
     <header class="page-header">
@@ -168,6 +175,13 @@
 <script setup>
 definePageMeta({ middleware: 'admin' });
 
+
+/**
+ * Pestanas disponibles. El id determina el endpoint que se consulta
+ * (atrasos -> /reportes/atrasos, salidas -> /reportes/salidas-anticipadas,
+ * inasistencias -> /reportes/inasistencias).
+ * @type {Array<{id: 'atrasos'|'salidas'|'inasistencias', nombre: string}>}
+ */
 const config = useRuntimeConfig();
 const tabs = [
   { id: 'atrasos', nombre: 'Atrasos' },
@@ -185,21 +199,42 @@ const cargando = ref(false);
 const mensaje = ref('');
 const errorGlobal = ref(false);
 
+/**
+ * Obtiene el token JWT almacenado en localStorage.
+ * @returns {string|null} El token, o null si no hay sesion.
+ */
 function token() {
   return localStorage.getItem('token');
 }
 
+/**
+ * Suma total de incidencias del reporte activo (atrasos o salidas
+ * anticipadas), mostrada como indicador resumen.
+ * @type {import('vue').ComputedRef<number>}
+ */
 const totalRegistros = computed(() =>
   datos.value.reduce((acc, d) => acc + Number(
     tabActiva.value === 'atrasos' ? d.total_atrasos : d.total_salidas_anticipadas
   ), 0)
 );
 
+/**
+ * Cambia de pestana y recarga inmediatamente el reporte correspondiente.
+ * @param {'atrasos'|'salidas'|'inasistencias'} id - Identificador de la pestana.
+ * @returns {void}
+ */
 function cambiarTab(id) {
   tabActiva.value = id;
   cargar();
 }
 
+/**
+ * Calcula el ancho porcentual de la barra de un usuario en el grafico,
+ * relativo al valor maximo del reporte actual. Se aplica un minimo de 8%
+ * para que las barras pequenas sigan siendo visibles.
+ * @param {number|string} valor - Cantidad de incidencias de la fila.
+ * @returns {string} Ancho en formato CSS (ej. '45%').
+ */
 function barraAncho(valor) {
   const max = Math.max(1, ...datos.value.map((d) => Number(
     tabActiva.value === 'atrasos' ? d.total_atrasos : d.total_salidas_anticipadas
@@ -207,10 +242,17 @@ function barraAncho(valor) {
   return `${Math.max(8, (Number(valor) / max) * 100)}%`;
 }
 
+/** Carga el reporte inicial (atrasos) al montar la pagina. */
 onMounted(async () => {
   await cargar();
 });
 
+/**
+ * Punto de entrada del boton "Generar": segun el formato seleccionado,
+ * descarga el PDF o carga los datos para mostrarlos en pantalla.
+ * @async
+ * @returns {Promise<void>}
+ */
 async function generar() {
   if (formato.value === 'pdf') {
     await descargarPdf();
@@ -219,6 +261,13 @@ async function generar() {
   await cargar();
 }
 
+/**
+ * Fuerza la descarga de un blob en el navegador creando un enlace temporal.
+ * Libera la URL de objeto al terminar para no filtrar memoria.
+ * @param {Blob} blob - Contenido del archivo a descargar.
+ * @param {string} nombre - Nombre con el que se guardara el archivo.
+ * @returns {void}
+ */
 function guardarBlob(blob, nombre) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -230,6 +279,17 @@ function guardarBlob(blob, nombre) {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Solicita el reporte activo al backend con formato=pdf y lo descarga como
+ * archivo, con nombre reporte_{tab}_{YYYY-MM-DD}.pdf.
+ *
+ * Los filtros enviados dependen de la pestana: desde/hasta para atrasos y
+ * salidas anticipadas, fecha para inasistencias. Si no hay token, redirige
+ * a /login.
+ *
+ * @async
+ * @returns {Promise<void>}
+ */
 async function descargarPdf() {
   if (!token()) return navigateTo('/login');
 
@@ -274,6 +334,18 @@ async function descargarPdf() {
   }
 }
 
+/**
+ * Consulta el reporte activo y guarda el resultado para mostrarlo en pantalla.
+ *
+ * Construye la URL segun tabActiva y agrega los filtros de fecha
+ * correspondientes. El resultado se guarda en inasistentes para el reporte
+ * de inasistencias, o en datos para los otros dos (limpiando siempre el que
+ * no corresponde). Si no hay token, redirige a /login; ante error, vacia
+ * ambas listas y muestra el mensaje del backend.
+ *
+ * @async
+ * @returns {Promise<void>}
+ */
 async function cargar() {
   if (!token()) return navigateTo('/login');
 

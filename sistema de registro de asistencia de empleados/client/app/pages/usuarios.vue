@@ -1,3 +1,10 @@
+<!--
+  Pagina /usuarios: CRUD de usuarios, solo para administradores
+  (protegida por el middleware admin).
+  Lista los usuarios en una tabla y permite crear y editar mediante un modal,
+  ademas de desactivar/activar cuentas.
+-->
+
 <template>
   <div class="page">
     <header class="page-header">
@@ -126,6 +133,10 @@
 definePageMeta({ middleware: 'admin' });
 
 const config = useRuntimeConfig();
+/**
+ * Listado de usuarios obtenido del backend.
+ * @type {import('vue').Ref<Array<{id: number, nombre: string, email: string, rol: string, estado: string}>>}
+ */
 const usuarios = ref([]);
 const cargando = ref(false);
 const guardando = ref(false);
@@ -136,6 +147,12 @@ const errorGlobal = ref(false);
 const errorForm = ref('');
 const usuarioActual = ref(null);
 
+/**
+ * Estado del formulario del modal. En modo creacion id es null; en modo
+ * edicion password queda vacio y solo se envia si el administrador escribe
+ * una contrasena nueva.
+ * @type {{id: number|null, nombre: string, email: string, password: string, rol: string, estado: string}}
+ */
 const form = reactive({
   id: null,
   nombre: '',
@@ -145,10 +162,19 @@ const form = reactive({
   estado: 'activo',
 });
 
+
+/**
+ * Obtiene el token JWT almacenado en localStorage.
+ * @returns {string|null} El token, o null si no hay sesion.
+ */
 function token() {
   return localStorage.getItem('token');
 }
 
+/**
+ * Lee y parsea el usuario autenticado desde localStorage.
+ * @returns {object|null} El usuario, o null si no existe o el JSON es invalido.
+ */
 function usuarioDeStorage() {
   const raw = localStorage.getItem('usuario');
   if (raw) {
@@ -161,6 +187,12 @@ function usuarioDeStorage() {
   return null;
 }
 
+/**
+ * Calcula las iniciales de un nombre (maximo 2 letras, en mayusculas) para
+ * mostrarlas como avatar en la tabla.
+ * @param {string} nombre - Nombre completo del usuario.
+ * @returns {string} Iniciales; 'U' si el nombre viene vacio.
+ */
 function iniciales(nombre) {
   return (nombre || 'U')
     .split(/\s+/)
@@ -170,11 +202,17 @@ function iniciales(nombre) {
     .toUpperCase();
 }
 
+/** Al montar la pagina, carga el usuario actual y el listado de usuarios. */
 onMounted(async () => {
   usuarioActual.value = usuarioDeStorage();
   await cargar();
 });
 
+/**
+ * Carga el listado completo de usuarios desde GET {apiBase}/usuarios.
+ * @async
+ * @returns {Promise<void>} Ante error, muestra el mensaje devuelto por el backend.
+ */
 async function cargar() {
   cargando.value = true;
   errorGlobal.value = false;
@@ -191,6 +229,11 @@ async function cargar() {
   }
 }
 
+/**
+ * Restablece el formulario del modal a sus valores por defecto (rol
+ * empleado, estado activo) y limpia el error del formulario.
+ * @returns {void}
+ */
 function reiniciarForm() {
   form.id = null;
   form.nombre = '';
@@ -201,12 +244,23 @@ function reiniciarForm() {
   errorForm.value = '';
 }
 
+/**
+ * Abre el modal en modo creacion, con el formulario limpio.
+ * @returns {void}
+ */
 function abrirNuevo() {
   reiniciarForm();
   editando.value = false;
   modalVisible.value = true;
 }
 
+/**
+ * Abre el modal en modo edicion, precargando los datos del usuario
+ * seleccionado. El campo password queda vacio a proposito: solo se envia
+ * si el administrador escribe una contrasena nueva.
+ * @param {{id: number, nombre: string, email: string, rol: string, estado: string}} u - Usuario a editar.
+ * @returns {void}
+ */
 function abrirEditar(u) {
   reiniciarForm();
   form.id = u.id;
@@ -218,10 +272,23 @@ function abrirEditar(u) {
   modalVisible.value = true;
 }
 
+/**
+ * Cierra el modal sin guardar cambios.
+ * @returns {void}
+ */
 function cerrar() {
   modalVisible.value = false;
 }
 
+/**
+ * Guarda el formulario del modal: hace PUT {apiBase}/usuarios/:id en modo
+ * edicion o POST {apiBase}/usuarios en modo creacion. El campo password
+ * solo se incluye en el cuerpo si tiene valor. Al terminar con exito cierra
+ * el modal y recarga el listado.
+ * @async
+ * @returns {Promise<void>} Ante error, muestra el mensaje dentro del modal
+ * (ej. email duplicado) y lo deja abierto.
+ */
 async function guardar() {
   guardando.value = true;
   errorForm.value = '';
@@ -259,6 +326,19 @@ async function guardar() {
   }
 }
 
+
+/**
+ * Cambia el estado de un usuario llamando a DELETE {apiBase}/usuarios/:id,
+ * previa confirmacion del administrador.
+ *
+ * NOTA: el endpoint del backend siempre fija el estado en 'inactivo'
+ * (borrado logico), por lo que en la practica solo funciona la desactivacion.
+ * Para reactivar un usuario hay que editarlo y cambiar su estado a 'activo'.
+ *
+ * @async
+ * @param {{id: number, nombre: string, estado: string}} u - Usuario cuyo estado se quiere cambiar.
+ * @returns {Promise<void>}
+ */
 async function eliminar(u) {
   const accion = u.estado === 'activo' ? 'desactivar' : 'activar';
   if (!confirm(`Deseas ${accion} a ${u.nombre}?`)) return;

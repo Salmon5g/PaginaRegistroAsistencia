@@ -1,3 +1,8 @@
+/**
+ * @file Configuracion de Nux para el frontend llamado Cliente
+ * SSR: false -> La app se ejecuta como SPA (Single Page Application), esto es intencional porqué
+ * la autenticación se basa en localstorage que no existe en el servidor.
+ */
 export default defineNuxtConfig({
   compatibilityDate: '2025-05-15',
   devtools: { enabled: true },
