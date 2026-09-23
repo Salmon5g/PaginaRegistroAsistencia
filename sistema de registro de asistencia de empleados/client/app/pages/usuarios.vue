@@ -41,24 +41,24 @@
           </thead>
           <tbody>
             <tr v-for="u in usuarios" :key="u.id">
-              <td>
+              <td data-label="Nombre">
                 <div class="usuarios__nombre">
                   <span class="usuarios__avatar">{{ iniciales(u.nombre) }}</span>
                   <span>{{ u.nombre }}</span>
                 </div>
               </td>
-              <td>{{ u.email }}</td>
-              <td>
+              <td data-label="Email">{{ u.email }}</td>
+              <td data-label="Rol">
                 <span :class="['tag', u.rol === 'administrador' ? 'tag--admin' : 'tag--empleado']">
                   {{ u.rol }}
                 </span>
               </td>
-              <td>
+              <td data-label="Estado">
                 <span :class="['tag', u.estado === 'activo' ? 'tag--activo' : 'tag--inactivo']">
                   {{ u.estado }}
                 </span>
               </td>
-              <td class="usuarios__col-acciones">
+              <td class="usuarios__col-acciones" data-label="Acciones">
                 <button class="btn btn--small btn--ghost" @click="abrirEditar(u)">Editar</button>
                 <button
                   class="btn btn--small"
@@ -453,5 +453,42 @@ async function eliminar(u) {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 8px;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 640px) {
+  .usuarios__nombre {
+    min-width: 0;
+    white-space: normal;
+    word-break: break-word;
+    text-align: right;
+  }
+
+  .usuarios__col-acciones {
+    flex-wrap: wrap;
+  }
+
+  .usuarios__col-acciones .btn + .btn {
+    margin-left: 6px;
+  }
+
+  .modal {
+    padding: 12px;
+    align-items: flex-end;
+  }
+
+  .modal__card {
+    max-height: calc(100vh - 24px);
+    padding: 20px;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .modal__actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal__actions .btn {
+    width: 100%;
+  }
 }
 </style>

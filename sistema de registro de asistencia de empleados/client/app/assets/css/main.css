@@ -480,5 +480,90 @@ tbody tr:hover {
 
   .page-header {
     align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .page-header__actions {
+    align-self: stretch;
+  }
+
+  .page-header__actions .btn {
+    width: 100%;
+  }
+
+  .page-header__title {
+    font-size: 1.4rem;
+  }
+
+  .page-header__subtitle {
+    font-size: 0.9rem;
+  }
+
+  .breadcrumb {
+    margin-bottom: 6px;
+  }
+
+  /* Tablas en movil: cada fila se convierte en una tarjeta apilada.
+     Todos los <td> llevan el atributo data-label con el nombre de la columna. */
+  .table-wrap {
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  table {
+    display: block;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tbody {
+    display: block;
+  }
+
+  tbody tr {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+  }
+
+  tbody tr:hover {
+    background: var(--surface);
+  }
+
+  tbody td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: none;
+    white-space: normal;
+  }
+
+  tbody td::before {
+    content: attr(data-label);
+    flex: none;
+    font-size: 0.66rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  tbody tr td:first-child {
+    padding-top: 0;
+  }
+
+  tbody tr td:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
   }
 }

@@ -96,9 +96,9 @@
             </thead>
             <tbody>
               <tr v-for="d in datos" :key="d.usuario_id">
-                <td class="reportes__empleado">{{ d.nombre }}</td>
-                <td>{{ d.email }}</td>
-                <td>
+                <td class="reportes__empleado" data-label="Empleado">{{ d.nombre }}</td>
+                <td data-label="Email">{{ d.email }}</td>
+                <td data-label="Total">
                   <div class="barra">
                     <span
                       class="barra__relleno"
@@ -107,7 +107,7 @@
                   </div>
                   <span class="barra__valor">{{ d.total_atrasos }}</span>
                 </td>
-                <td class="reportes__fechas">{{ d.fechas_atraso }}</td>
+                <td class="reportes__fechas" data-label="Fechas">{{ d.fechas_atraso }}</td>
               </tr>
             </tbody>
           </table>
@@ -129,9 +129,9 @@
             </thead>
             <tbody>
               <tr v-for="d in datos" :key="d.usuario_id">
-                <td class="reportes__empleado">{{ d.nombre }}</td>
-                <td>{{ d.email }}</td>
-                <td>
+                <td class="reportes__empleado" data-label="Empleado">{{ d.nombre }}</td>
+                <td data-label="Email">{{ d.email }}</td>
+                <td data-label="Total">
                   <div class="barra">
                     <span
                       class="barra__relleno"
@@ -140,7 +140,7 @@
                   </div>
                   <span class="barra__valor">{{ d.total_salidas_anticipadas }}</span>
                 </td>
-                <td class="reportes__fechas">{{ d.fechas_salida }}</td>
+                <td class="reportes__fechas" data-label="Fechas">{{ d.fechas_salida }}</td>
               </tr>
             </tbody>
           </table>
@@ -160,8 +160,8 @@
             </thead>
             <tbody>
               <tr v-for="d in inasistentes" :key="d.usuario_id">
-                <td class="reportes__empleado">{{ d.nombre }}</td>
-                <td>{{ d.email }}</td>
+                <td class="reportes__empleado" data-label="Empleado">{{ d.nombre }}</td>
+                <td data-label="Email">{{ d.email }}</td>
               </tr>
             </tbody>
           </table>
@@ -527,5 +527,41 @@ async function cargar() {
   color: var(--muted);
   max-width: 380px;
   white-space: normal;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 640px) {
+  .reportes__content {
+    padding: 18px;
+  }
+
+  .reportes__filtros {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .reportes__filtro,
+  .reportes__filtro--formato {
+    min-width: 0;
+    width: 100%;
+    margin-bottom: 0;
+  }
+
+  .reportes__filtros .btn {
+    width: 100%;
+  }
+
+  .reportes__resumen {
+    flex-direction: column;
+  }
+
+  .stat {
+    min-width: 0;
+  }
+
+  .barra {
+    width: 100px;
+  }
 }
 </style>

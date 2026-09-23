@@ -19,12 +19,12 @@
           </thead>
           <tbody>
             <tr v-for="a in asistencias" :key="a.id">
-              <td>
+              <td data-label="Tipo">
                 <span :class="['tipo-badge', a.tipo === 'entrada' ? 'tipo-badge--entrada' : 'tipo-badge--salida']">
                   {{ a.tipo }}
                 </span>
               </td>
-              <td>{{ new Date(a.fecha_hora).toLocaleString() }}</td>
+              <td data-label="Fecha y hora">{{ new Date(a.fecha_hora).toLocaleString() }}</td>
             </tr>
           </tbody>
         </table>
