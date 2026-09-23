@@ -29,11 +29,11 @@
 
     <div class="card reportes__content">
       <div class="reportes__filtros">
-        <div class="form-group reportes__filtro">
+        <div class="form-group reportes__filtro" v-if="tabActiva !== 'inasistencias'">
           <label :for="'desde-' + tabActiva">Desde</label>
           <input :id="'desde-' + tabActiva" v-model="desde" type="date" @change="cargar" />
         </div>
-        <div class="form-group reportes__filtro">
+        <div class="form-group reportes__filtro" v-if="tabActiva !== 'inasistencias'">
           <label :for="'hasta-' + tabActiva">Hasta</label>
           <input :id="'hasta-' + tabActiva" v-model="hasta" type="date" @change="cargar" />
         </div>
