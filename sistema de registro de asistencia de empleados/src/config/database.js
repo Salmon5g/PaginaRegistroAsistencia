@@ -1,17 +1,15 @@
 'use strict';
 const { Sequelize } = require('sequelize');
 require('dotenv').config();
+const { dbEnv } = require('./dbEnv');
 
-const sequelize = new Sequelize(
-  process.env.DB_NAME || 'asistencia_db',
-  process.env.DB_USER || 'root',
-  process.env.DB_PASS || '',
-  {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
-    dialect: 'mysql',
-    logging: false,
-  }
-);
+const { database, username, password, host, port } = dbEnv();
+
+const sequelize = new Sequelize(database, username, password, {
+  host,
+  port,
+  dialect: 'mysql',
+  logging: false,
+});
 
 module.exports = sequelize;

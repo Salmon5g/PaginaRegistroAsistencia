@@ -1,5 +1,5 @@
 'use strict';
-const { seedAdmin } = require('./admin-seeder');
+const { seedAdmin } = require('../utils/admin-seeder');
 
 module.exports = {
   up: async () => {

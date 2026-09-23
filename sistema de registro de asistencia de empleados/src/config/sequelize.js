@@ -1,31 +1,34 @@
 'use strict';
 require('dotenv').config();
+const { dbEnv } = require('./dbEnv');
+
+const { database, username, password, host, port } = dbEnv();
 
 module.exports = {
   development: {
-    username: process.env.DB_USER || 'root',
-    password: process.env.DB_PASS || '',
-    database: process.env.DB_NAME || 'asistencia_db',
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
+    username,
+    password,
+    database,
+    host,
+    port,
     dialect: 'mysql',
     logging: false,
   },
   test: {
-    username: process.env.DB_USER || 'root',
-    password: process.env.DB_PASS || '',
+    username,
+    password,
     database: 'asistencia_test',
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
+    host,
+    port,
     dialect: 'mysql',
     logging: false,
   },
   production: {
-    username: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT || 3306,
+    username,
+    password,
+    database,
+    host,
+    port,
     dialect: 'mysql',
     logging: false,
   },

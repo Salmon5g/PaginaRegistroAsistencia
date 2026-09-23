@@ -5,6 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "start:deploy": "sequelize-cli db:migrate && sequelize-cli db:seed:all && node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "node --test \"test/**/*.test.js\"",
     "test:unit": "node --test \"test/unit/*.test.js\"",
