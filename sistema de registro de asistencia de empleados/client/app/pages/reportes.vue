@@ -200,11 +200,11 @@ const mensaje = ref('');
 const errorGlobal = ref(false);
 
 /**
- * Obtiene el token JWT almacenado en localStorage.
+ * Obtiene el token JWT almacenado en sessionStorage.
  * @returns {string|null} El token, o null si no hay sesion.
  */
 function token() {
-  return localStorage.getItem('token');
+  return sessionStorage.getItem('token');
 }
 
 /**

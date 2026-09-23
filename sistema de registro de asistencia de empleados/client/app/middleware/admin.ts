@@ -12,10 +12,10 @@
  *
  * Flujo de redirecciones:
  * - Se omite por completo durante el renderizado en servidor (import.meta.server),
- *   ya que depende de localStorage.
- * - Sin token en localStorage -> redirige a /login.
+ *   ya que depende de sessionStorage.
+ * - Sin token en sessionStorage -> redirige a /login.
  * - Con token pero sin rol administrador (o con un usuario corrupto en
- *   localStorage) -> redirige a /panel.
+ *   sessionStorage) -> redirige a /panel.
  * - Administrador valido -> permite continuar a la ruta solicitada.
  *
  * @param {import('vue-router').RouteLocationNormalized} to - Ruta de destino a la que se intenta navegar.
@@ -25,10 +25,10 @@
 
 export default defineNuxtRouteMiddleware((to) => {
   if (import.meta.server) return;
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   if (!token) return navigateTo('/login');
 
-  const raw = localStorage.getItem('usuario');
+  const raw = sessionStorage.getItem('usuario');
   let usuario = null;
   if (raw) {
     try {

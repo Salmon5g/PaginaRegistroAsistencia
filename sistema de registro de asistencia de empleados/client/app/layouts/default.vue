@@ -71,7 +71,7 @@ const mobileAbierto = ref(false);
 const usuario = ref(null);
 
 onMounted(() => {
-  const raw = localStorage.getItem('usuario');
+  const raw = sessionStorage.getItem('usuario');
   if (raw) {
     try {
       usuario.value = JSON.parse(raw);
@@ -97,8 +97,8 @@ function esActivo(path) {
 }
 
 function cerrarSesion() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('usuario');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('usuario');
   navigateTo('/login');
 }
 </script>

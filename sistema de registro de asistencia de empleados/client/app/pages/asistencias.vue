@@ -39,7 +39,7 @@ const config = useRuntimeConfig();
 const asistencias = ref([]);
 
 onMounted(async () => {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   if (!token) return navigateTo('/login');
   try {
     const res = await $fetch(`${config.public.apiBase}/asistencias/mis`, {

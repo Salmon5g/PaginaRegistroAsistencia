@@ -46,8 +46,8 @@ async function handleLogin() {
       body: { email: email.value, password: password.value },
     });
     if (res.ok) {
-      localStorage.setItem('token', res.token);
-      localStorage.setItem('usuario', JSON.stringify(res.usuario));
+      sessionStorage.setItem('token', res.token);
+      sessionStorage.setItem('usuario', JSON.stringify(res.usuario));
       navigateTo('/panel');
     }
   } catch (e) {

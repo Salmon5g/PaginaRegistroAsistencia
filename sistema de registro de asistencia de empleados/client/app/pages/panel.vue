@@ -96,7 +96,7 @@
 <script setup>
 
 /**
-* Usuario autenticado leido desde localStorage.
+* Usuario autenticado leido desde sessionStorage.
  * @type {import('vue').Ref<{id: number, nombre: string, email: string, rol: string}|null>}
  */
 const config = useRuntimeConfig();
@@ -110,11 +110,11 @@ const estadoTexto = ref('');
 const ultimaMarca = ref(null);
 
 /**
- * Al montar la pagina, carga el usuario desde localStorage y consulta el
+ * Al montar la pagina, carga el usuario desde sessionStorage y consulta el
  * estado de la jornada del dia.
  */
 onMounted(async () => {
-  const data = localStorage.getItem('usuario');
+  const data = sessionStorage.getItem('usuario');
   if (data) usuario.value = JSON.parse(data);
   await cargarEstado();
 });
@@ -129,14 +129,14 @@ onMounted(async () => {
  * - Ultima marca entrada -> se habilita solo "Salida".
  * - Ultima marca salida -> jornada completada, ambos botones deshabilitados.
  *
- * Si no hay token en localStorage, redirige a /login. Si la peticion
+ * Si no hay token en sessionStorage, redirige a /login. Si la peticion
  * falla, asume que no hay marcas registradas hoy.
  *
  * @async
  * @returns {Promise<void>}
  */
 async function cargarEstado() {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   if (!token) return navigateTo('/login');
 
   const hoyInicio = new Date();
@@ -200,7 +200,7 @@ async function registrarAsistencia(tipo) {
   cargando.value = true;
   errorRegistro.value = false;
   try {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     const res = await $fetch(`${config.public.apiBase}/asistencias`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
