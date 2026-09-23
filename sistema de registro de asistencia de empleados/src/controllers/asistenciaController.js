@@ -10,6 +10,38 @@ const { Op } = require('sequelize');
 const sequelize = require('../config/database');
 
 /**
+ * Calcula el estado de la jornada a partir de la ultima marca del dia,
+ * para que el frontend sincronice sus botones con la fuente de verdad
+ * (el backend) y no dependa de adivinar el orden de las marcas.
+ * @param {{tipo?: string}|null} ultima - Ultima marca del dia (null si no hay).
+ * @returns {{puedeEntrada: boolean, puedeSalida: boolean, ultima_tipo: string|null, texto: string}}
+ */
+function estadoDe(ultima) {
+  if (!ultima) {
+    return {
+      puedeEntrada: true,
+      puedeSalida: false,
+      ultima_tipo: null,
+      texto: 'Aun no has marcado tu entrada.',
+    };
+  }
+  if (ultima.tipo === 'entrada') {
+    return {
+      puedeEntrada: false,
+      puedeSalida: true,
+      ultima_tipo: 'entrada',
+      texto: 'Entrada registrada. Ahora marca tu salida.',
+    };
+  }
+  return {
+    puedeEntrada: true,
+    puedeSalida: false,
+    ultima_tipo: 'salida',
+    texto: 'Jornada completada. Puedes iniciar una nueva entrada.',
+  };
+}
+
+/**
  * Registra una marca de entrada o salida para el usuario autenticado.
  * Valida que la secuencia sea correcta: no se puede marcar dos entradas
  * seguidas en el mismo dia, ni una salida sin una entrada previa ese dia.
@@ -36,16 +68,26 @@ const registrar = async (req, res) => {
         usuario_id,
         fecha_hora: { [Op.between]: [inicioDia, finDia] },
       },
-      order: [['fecha_hora', 'DESC']],
+      order: [['fecha_hora', 'DESC'], ['id', 'DESC']],
+      // El desempate por id evita orden no determinista cuando varias
+      // marcas comparten el mismo segundo (precisión de DATE/DATETIME).
     });
 
     if (tipo === 'entrada') {
       if (ultima && ultima.tipo === 'entrada') {
-        return res.status(400).json({ ok: false, message: 'Ya registraste tu entrada hoy. Debes marcar tu salida.' });
+        return res.status(400).json({
+          ok: false,
+          message: 'Ya registraste tu entrada hoy. Debes marcar tu salida.',
+          estado: estadoDe(ultima),
+        });
       }
     } else {
       if (!ultima || ultima.tipo === 'salida') {
-        return res.status(400).json({ ok: false, message: 'Debes marcar tu entrada antes de registrar la salida.' });
+        return res.status(400).json({
+          ok: false,
+          message: 'Debes marcar tu entrada antes de registrar la salida.',
+          estado: estadoDe(ultima),
+        });
       }
     }
 
@@ -55,7 +97,12 @@ const registrar = async (req, res) => {
       fecha_hora: new Date(),
     });
 
-    res.status(201).json({ ok: true, message: `${tipo} registrada.`, data: asistencia });
+    res.status(201).json({
+      ok: true,
+      message: `${tipo} registrada.`,
+      data: asistencia,
+      estado: estadoDe(asistencia),
+    });
   } catch (err) {
     res.status(500).json({ ok: false, message: 'Error al registrar asistencia.' });
   }
@@ -69,7 +116,7 @@ const listarMisAsistencias = async (req, res) => {
   try {
     const asistencias = await Asistencia.findAll({
       where: { usuario_id: req.usuario.id },
-      order: [['fecha_hora', 'DESC']],
+      order: [['fecha_hora', 'DESC'], ['id', 'DESC']],
     });
     res.json({ ok: true, data: asistencias });
   } catch (err) {
@@ -86,7 +133,7 @@ const listarTodas = async (req, res) => {
   try {
     const asistencias = await Asistencia.findAll({
       include: [{ model: Usuario, as: 'usuario', attributes: ['id', 'nombre', 'email'] }],
-      order: [['fecha_hora', 'DESC']],
+      order: [['fecha_hora', 'DESC'], ['id', 'DESC']],
     });
     res.json({ ok: true, data: asistencias });
   } catch (err) {

@@ -169,8 +169,25 @@ async function cargarEstado() {
 
 
 /**
+ * Aplica el estado de jornada devuelto por el backend (fuente de verdad)
+ * a los botones y al texto de estado. Si el backend no lo provee (p.ej.
+ * en errores de red), consulta el estado por GET para resincronizar.
+ * @async
+ * @param {{puedeEntrada: boolean, puedeSalida: boolean, ultima_tipo: string|null, texto: string}|undefined} estado
+ * @returns {Promise<void>}
+ */
+async function aplicarEstado(estado) {
+  if (!estado) return cargarEstado();
+  puedeEntrada.value = estado.puedeEntrada;
+  puedeSalida.value = estado.puedeSalida;
+  estadoTexto.value = estado.texto;
+  ultimaMarca.value = estado.ultima_tipo ? { tipo: estado.ultima_tipo } : null;
+}
+
+/**
  * Registra una marca de asistencia mediante POST {apiBase}/asistencias y
- * vuelve a consultar el estado de la jornada para refrescar los botones.
+ * refresca el estado de la jornada a partir de la respuesta del backend
+ * (o una consulta GET en caso de error, para no quedar desincronizado).
  *
  * @async
  * @param {'entrada'|'salida'} tipo - Tipo de marca a registrar.
@@ -179,20 +196,22 @@ async function cargarEstado() {
  * entrada/salida).
  */
 async function registrarAsistencia(tipo) {
+  if (cargando.value) return;
   cargando.value = true;
   errorRegistro.value = false;
   try {
     const token = localStorage.getItem('token');
-    await $fetch(`${config.public.apiBase}/asistencias`, {
+    const res = await $fetch(`${config.public.apiBase}/asistencias`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: { tipo },
     });
     mensaje.value = `${tipo.charAt(0).toUpperCase() + tipo.slice(1)} registrada correctamente`;
-    await cargarEstado();
+    await aplicarEstado(res.estado);
   } catch (e) {
     errorRegistro.value = true;
     mensaje.value = e?.data?.message || 'Error al registrar';
+    await aplicarEstado(e?.data?.estado);
   } finally {
     cargando.value = false;
   }
