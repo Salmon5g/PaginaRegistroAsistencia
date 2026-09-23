@@ -3,23 +3,30 @@
  * anticipadas e inasistencias. Requiere privilegios de administrador.
  * @module controllers/reporteController
  *
- * NOTA: `reporteAtrasos` y `reporteSalidasAnticipadas` interpolan los
- * parametros de query `desde`/`hasta` directamente en el SQL. Se documenta
- * tal como esta, pero conviene parametrizar esos valores para evitar
- * inyeccion SQL.
+ * NOTA: Todos los umbrales horarios (9:30 / 17:30) y los rangos de fecha
+ * (`desde`/`hasta`/`fecha`) se evaluan en la zona horaria de Chile
+ * (America/Santiago), por lo que los datos se traen de la BD en UTC y se
+ * convierten antes de clasificar y de formatear las fechas del reporte.
  */
 
 'use strict';
 const { QueryTypes } = require('sequelize');
 const sequelize = require('../config/database');
-const { obtenerInasistentes } = require('../services/reportes');
+const {
+  ZONA_REPORTES,
+  fechaTexto,
+  fechaHoraTexto,
+  obtenerEntradasAtrasadas,
+  obtenerSalidasAnticipadas,
+  obtenerInasistentes,
+} = require('../services/reportes');
 const { generarPdf } = require('../services/pdfReportes');
 
 function responderPdf(req, res, tipo, data, meta) {
   if (req.query.formato !== 'pdf') return false;
   generarPdf(tipo, data, meta)
     .then((buffer) => {
-      const fecha = new Date().toISOString().slice(0, 10);
+      const fecha = fechaTexto(new Date(), ZONA_REPORTES);
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="reporte_${tipo}_${fecha}.pdf"`);
       res.end(buffer);
@@ -31,9 +38,38 @@ function responderPdf(req, res, tipo, data, meta) {
 }
 
 /**
- * Genera un reporte de entradas atrasadas (posteriores a las 9:30 am),
- * agrupado por usuario, con el total de atrasos y las fechas en que
- * ocurrieron. Puede filtrarse por rango de fechas.
+ * Agrupa una lista de marcas por usuario y produce los resúmenes de incidencias
+ * (total y fechas) tal como se sirven en el JSON y el PDF.
+ * @param {Array} incidentes - Marcas ya clasificadas como incidencia.
+ * @param {string} totalKey - Clave del total (p.ej. `total_atrasos`).
+ * @param {string} fechasKey - Clave de las fechas (p.ej. `fechas_atraso`).
+ * @returns {Array}
+ */
+function resumenPorUsuario(incidentes, totalKey, fechasKey) {
+  const porUsuario = new Map();
+  for (const m of incidentes) {
+    if (!porUsuario.has(m.usuario_id)) {
+      porUsuario.set(m.usuario_id, {
+        usuario_id: m.usuario_id,
+        nombre: m.nombre,
+        email: m.email,
+        [totalKey]: 0,
+        [fechasKey]: [],
+      });
+    }
+    const e = porUsuario.get(m.usuario_id);
+    e[totalKey] += 1;
+    e[fechasKey].push(fechaHoraTexto(m.fecha_hora, ZONA_REPORTES));
+  }
+  return [...porUsuario.values()]
+    .map((e) => ({ ...e, [fechasKey]: e[fechasKey].join(',') }))
+    .sort((a, b) => b[totalKey] - a[totalKey]);
+}
+
+/**
+ * Genera un reporte de entradas atrasadas (posteriores a las 9:30 am hora
+ * de Chile), agrupado por usuario, con el total de atrasos y las fechas en
+ * que ocurrieron. Puede filtrarse por rango de fechas (horario chileno).
  * @async
  * @function reporteAtrasos
  * @param {import('express').Request} req - Peticion HTTP. `req.query` puede contener `{ desde, hasta }` en formato `YYYY-MM-DD`.
@@ -46,23 +82,20 @@ const reporteAtrasos = async (req, res) => {
   try {
     const { desde, hasta } = req.query;
 
-    let whereClause = "WHERE a.tipo = 'entrada' AND (HOUR(a.fecha_hora) > 9 OR (HOUR(a.fecha_hora) = 9 AND MINUTE(a.fecha_hora) > 30))";
-    if (desde) whereClause += ` AND DATE(a.fecha_hora) >= '${desde}'`;
-    if (hasta) whereClause += ` AND DATE(a.fecha_hora) <= '${hasta}'`;
+    const marcas = await sequelize.query(
+      `SELECT a.usuario_id, a.tipo, a.fecha_hora, u.nombre, u.email
+       FROM asistencias a
+       INNER JOIN usuarios u ON u.id = a.usuario_id
+       WHERE a.tipo = 'entrada'
+       ORDER BY a.fecha_hora ASC, a.id ASC`,
+      { type: QueryTypes.SELECT }
+    );
 
-    const resultados = await sequelize.query(`
-      SELECT
-        u.id AS usuario_id,
-        u.nombre,
-        u.email,
-        COUNT(a.id) AS total_atrasos,
-        GROUP_CONCAT(DATE_FORMAT(a.fecha_hora, '%Y-%m-%d %H:%i') ORDER BY a.fecha_hora) AS fechas_atraso
-      FROM asistencias a
-      INNER JOIN usuarios u ON u.id = a.usuario_id
-      ${whereClause}
-      GROUP BY u.id, u.nombre, u.email
-      ORDER BY total_atrasos DESC
-    `, { type: QueryTypes.SELECT });
+    let atrasadas = obtenerEntradasAtrasadas(marcas, ZONA_REPORTES);
+    if (desde) atrasadas = atrasadas.filter((m) => fechaTexto(m.fecha_hora, ZONA_REPORTES) >= desde);
+    if (hasta) atrasadas = atrasadas.filter((m) => fechaTexto(m.fecha_hora, ZONA_REPORTES) <= hasta);
+
+    const resultados = resumenPorUsuario(atrasadas, 'total_atrasos', 'fechas_atraso');
 
     if (responderPdf(req, res, 'atrasos', resultados, { desde, hasta })) return;
     res.json({ ok: true, data: resultados });
@@ -72,9 +105,9 @@ const reporteAtrasos = async (req, res) => {
 };
 
 /**
- * Genera un reporte de salidas anticipadas (anteriores a las 5:30 pm),
- * agrupado por usuario, con el total de salidas anticipadas y las fechas en que
- * ocurrieron. Puede filtrarse por rango de fechas.
+ * Genera un reporte de salidas anticipadas (anteriores a las 5:30 pm hora de
+ * Chile), agrupado por usuario, con el total de salidas anticipadas y las
+ * fechas en que ocurrieron. Puede filtrarse por rango de fechas (horario chileno).
  * @async
  * @function reporteSalidasAnticipadas
  * @param {import('express').Request} req - Peticion HTTP. `req.query` puede contener `{ desde, hasta }` en formato `YYYY-MM-DD`.
@@ -87,23 +120,20 @@ const reporteSalidasAnticipadas = async (req, res) => {
   try {
     const { desde, hasta } = req.query;
 
-    let whereClause = "WHERE a.tipo = 'salida' AND (HOUR(a.fecha_hora) < 17 OR (HOUR(a.fecha_hora) = 17 AND MINUTE(a.fecha_hora) < 30))";
-    if (desde) whereClause += ` AND DATE(a.fecha_hora) >= '${desde}'`;
-    if (hasta) whereClause += ` AND DATE(a.fecha_hora) <= '${hasta}'`;
+    const marcas = await sequelize.query(
+      `SELECT a.usuario_id, a.tipo, a.fecha_hora, u.nombre, u.email
+       FROM asistencias a
+       INNER JOIN usuarios u ON u.id = a.usuario_id
+       WHERE a.tipo = 'salida'
+       ORDER BY a.fecha_hora ASC, a.id ASC`,
+      { type: QueryTypes.SELECT }
+    );
 
-    const resultados = await sequelize.query(`
-      SELECT
-        u.id AS usuario_id,
-        u.nombre,
-        u.email,
-        COUNT(a.id) AS total_salidas_anticipadas,
-        GROUP_CONCAT(DATE_FORMAT(a.fecha_hora, '%Y-%m-%d %H:%i') ORDER BY a.fecha_hora) AS fechas_salida
-      FROM asistencias a
-      INNER JOIN usuarios u ON u.id = a.usuario_id
-      ${whereClause}
-      GROUP BY u.id, u.nombre, u.email
-      ORDER BY total_salidas_anticipadas DESC
-    `, { type: QueryTypes.SELECT });
+    let anticipadas = obtenerSalidasAnticipadas(marcas, ZONA_REPORTES);
+    if (desde) anticipadas = anticipadas.filter((m) => fechaTexto(m.fecha_hora, ZONA_REPORTES) >= desde);
+    if (hasta) anticipadas = anticipadas.filter((m) => fechaTexto(m.fecha_hora, ZONA_REPORTES) <= hasta);
+
+    const resultados = resumenPorUsuario(anticipadas, 'total_salidas_anticipadas', 'fechas_salida');
 
     if (responderPdf(req, res, 'salidas', resultados, { desde, hasta })) return;
     res.json({ ok: true, data: resultados });
@@ -113,8 +143,8 @@ const reporteSalidasAnticipadas = async (req, res) => {
 };
 
 /**
- * Genera un reporte de inasistencias para una fecha específica,
- * mostrando los usuarios que no registraron asistencia.
+ * Genera un reporte de inasistencias para una fecha específica (calendario
+ * chileno), mostrando los usuarios que no registraron asistencia.
  * @async
  * @function reporteInasistencias
  * @param {import('express').Request} req - Peticion HTTP. `req.query` puede contener `{ fecha }` en formato `YYYY-MM-DD`.
@@ -125,7 +155,7 @@ const reporteSalidasAnticipadas = async (req, res) => {
 const reporteInasistencias = async (req, res) => {
   try {
     const { fecha } = req.query;
-    const fechaConsulta = fecha || new Date().toISOString().split('T')[0];
+    const fechaConsulta = fecha || fechaTexto(new Date(), ZONA_REPORTES);
 
     const usuarios = await sequelize.query(
       'SELECT id, nombre, email, estado FROM usuarios ORDER BY nombre ASC',
@@ -137,7 +167,7 @@ const reporteInasistencias = async (req, res) => {
       { type: QueryTypes.SELECT }
     );
 
-    const resultado = obtenerInasistentes(usuarios, marcas, fechaConsulta)
+    const resultado = obtenerInasistentes(usuarios, marcas, fechaConsulta, ZONA_REPORTES)
       .map((u) => ({ usuario_id: u.id, nombre: u.nombre, email: u.email }));
 
     if (responderPdf(req, res, 'inasistencias', resultado, { fecha: fechaConsulta })) return;

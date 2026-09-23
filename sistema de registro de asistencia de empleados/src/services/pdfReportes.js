@@ -38,7 +38,7 @@ function dibujarFooter(doc) {
   const y = doc.page.height - bottom + 14;
   doc.fontSize(8).fillColor('#9ca3af');
   doc.text(
-    `Sistema de Asistencia - Generado el ${new Date().toLocaleString('es-CL')}`,
+    `Sistema de Asistencia - Generado el ${new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' })}`,
     left,
     y,
     { width: doc.page.width - left - right, align: 'center' }
