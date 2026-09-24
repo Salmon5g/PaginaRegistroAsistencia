@@ -8,85 +8,77 @@
 const { Asistencia, Usuario } = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require('../config/database');
+const { estadoJornada, inicioYFinDelDia } = require('../services/jornada');
 
 /**
- * Calcula el estado de la jornada a partir de la ultima marca del dia,
- * para que el frontend sincronice sus botones con la fuente de verdad
- * (el backend) y no dependa de adivinar el orden de las marcas.
- * @param {{tipo?: string}|null} ultima - Ultima marca del dia (null si no hay).
- * @returns {{puedeEntrada: boolean, puedeSalida: boolean, ultima_tipo: string|null, texto: string}}
+ * Obtiene el estado actual de la jornada del usuario autenticado,
+ * consultando sus marcas del dia (calendario de Chile).
+ * @param {number} usuario_id - Id del usuario.
+ * @param {Date} [ahora] - Instante de referencia para la jornada "de hoy".
+ * @returns {Promise<object>} Estado de la jornada (fuente de verdad).
  */
-function estadoDe(ultima) {
-  if (!ultima) {
-    return {
-      puedeEntrada: true,
-      puedeSalida: false,
-      ultima_tipo: null,
-      texto: 'Aun no has marcado tu entrada.',
-    };
-  }
-  if (ultima.tipo === 'entrada') {
-    return {
-      puedeEntrada: false,
-      puedeSalida: true,
-      ultima_tipo: 'entrada',
-      texto: 'Entrada registrada. Ahora marca tu salida.',
-    };
-  }
-  return {
-    puedeEntrada: true,
-    puedeSalida: false,
-    ultima_tipo: 'salida',
-    texto: 'Jornada completada. Puedes iniciar una nueva entrada.',
-  };
+async function estadoDeJornadaDe(usuario_id, ahora = new Date()) {
+  const { inicio, fin } = inicioYFinDelDia(ahora);
+  const marcas = await Asistencia.findAll({
+    where: {
+      usuario_id,
+      fecha_hora: { [Op.between]: [inicio, fin] },
+    },
+  });
+  return estadoJornada(marcas, { ahora });
 }
 
 /**
  * Registra una marca de entrada o salida para el usuario autenticado.
- * Valida que la secuencia sea correcta: no se puede marcar dos entradas
- * seguidas en el mismo dia, ni una salida sin una entrada previa ese dia.
+ * En cada jornada (dia en el calendario de Chile) solo se permite una
+ * entrada y, tras ella, una salida. Una vez completa la jornada, no se
+ * acepta ninguna marca mas; los botones se habilitan recien al dia
+ * siguiente a la hora de inicio de la jornada.
  * @name registrar
  * @function
- * @description Registra una nueva asistencia (entrada o salida).
+ * @param {object} [opts={}]
+ * @param {Date} [opts.ahora] - Instante de referencia (inyectable para pruebas).
  */
-const registrar = async (req, res) => {
+const registrar = async (req, res, opts = {}) => {
   try {
     const { tipo } = req.body;
     const usuario_id = req.usuario.id;
+    const ahora = opts.ahora || new Date();
 
     if (!tipo || !['entrada', 'salida'].includes(tipo)) {
       return res.status(400).json({ ok: false, message: 'Tipo debe ser "entrada" o "salida".' });
     }
 
-    const inicioDia = new Date();
-    inicioDia.setHours(0, 0, 0, 0);
-    const finDia = new Date();
-    finDia.setHours(23, 59, 59, 999);
-
-    const ultima = await Asistencia.findOne({
-      where: {
-        usuario_id,
-        fecha_hora: { [Op.between]: [inicioDia, finDia] },
-      },
-      order: [['fecha_hora', 'DESC'], ['id', 'DESC']],
-      // El desempate por id evita orden no determinista cuando varias
-      // marcas comparten el mismo segundo (precisión de DATE/DATETIME).
-    });
+    const estado = await estadoDeJornadaDe(usuario_id, ahora);
 
     if (tipo === 'entrada') {
-      if (ultima && ultima.tipo === 'entrada') {
+      if (estado.hayEntrada) {
         return res.status(400).json({
           ok: false,
-          message: 'Ya registraste tu entrada hoy. Debes marcar tu salida.',
-          estado: estadoDe(ultima),
+          message: 'Ya registraste tu entrada hoy. Solo puedes marcar una entrada por jornada.',
+          estado,
+        });
+      }
+      if (!estado.puedeEntrada) {
+        return res.status(400).json({
+          ok: false,
+          message: `Aun no puedes marcar tu entrada. La jornada comienza a las ${estado.hora_inicio}.`,
+          estado,
         });
       }
     } else {
-      if (!ultima || ultima.tipo === 'salida') {
+      if (!estado.hayEntrada) {
         return res.status(400).json({
           ok: false,
           message: 'Debes marcar tu entrada antes de registrar la salida.',
-          estado: estadoDe(ultima),
+          estado,
+        });
+      }
+      if (estado.jornadaCompleta) {
+        return res.status(400).json({
+          ok: false,
+          message: 'Tu jornada de hoy ya esta completa. Los registros se habilitan nuevamente manana.',
+          estado,
         });
       }
     }
@@ -94,17 +86,37 @@ const registrar = async (req, res) => {
     const asistencia = await Asistencia.create({
       usuario_id,
       tipo,
-      fecha_hora: new Date(),
+      fecha_hora: ahora,
     });
 
+    const estadoFinalizado = await estadoDeJornadaDe(usuario_id, ahora);
     res.status(201).json({
       ok: true,
       message: `${tipo} registrada.`,
       data: asistencia,
-      estado: estadoDe(asistencia),
+      estado: estadoFinalizado,
     });
   } catch (err) {
     res.status(500).json({ ok: false, message: 'Error al registrar asistencia.' });
+  }
+};
+
+/**
+ * Devuelve el estado de la jornada del usuario autenticado, calculado en el
+ * backend (fuente de verdad). El frontend lo consulta al cargar la pantalla
+ * y tras cada operacion para habilitar/deshabilitar los botones.
+ * @name estadoActual
+ * @function
+ * @param {object} [opts={}]
+ * @param {Date} [opts.ahora] - Instante de referencia (inyectable para pruebas).
+ */
+const estadoActual = async (req, res, opts = {}) => {
+  try {
+    const ahora = opts.ahora || new Date();
+    const estado = await estadoDeJornadaDe(req.usuario.id, ahora);
+    res.json({ ok: true, data: estado });
+  } catch (err) {
+    res.status(500).json({ ok: false, message: 'Error al consultar el estado de la jornada.' });
   }
 };
 
@@ -141,4 +153,4 @@ const listarTodas = async (req, res) => {
   }
 };
 
-module.exports = { registrar, listarMisAsistencias, listarTodas };
+module.exports = { registrar, estadoActual, listarMisAsistencias, listarTodas };
